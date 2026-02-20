@@ -106,7 +106,7 @@ async def submit_support(data: SupportCreate, request: Request):
         return {"success": True}
 
     client_ip = request.client.host if request.client else "unknown"
-    if not _rate_limit(client_ip, limit=5, window=3600):
+    if not _rate_limit(client_ip, limit=10, window=3600):
         raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
 
     if len(data.message.strip()) < 10:
