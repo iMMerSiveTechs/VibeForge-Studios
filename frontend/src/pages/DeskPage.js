@@ -325,7 +325,7 @@ export default function DeskPage() {
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: mod.accent }} />
                 )}
                 {mod.isSteno && [...Array(5)].map((_, j) => (
-                  <div key={j} style={{ position: 'absolute', left: '2rem', right: '1.25rem', height: '1px', background: 'rgba(200,0,0,0.1)', top: `${40 + j * 20}px' }} />
+                  <div key={j} style={{ position: 'absolute', left: '2rem', right: '1.25rem', height: '1px', background: 'rgba(200,0,0,0.1)', top: `${40 + j * 20}px` }} />
                 ))}
 
                 <div style={{ paddingLeft: mod.accentPos === 'left' ? '0.75rem' : '0' }}>
