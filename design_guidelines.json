@@ -1,0 +1,177 @@
+{
+  "identity": {
+    "name": "VibeForge Studios LLC",
+    "tone": "Premium, Cinematic, Restrained, High-Contrast, Apple-level polished",
+    "logo_url": "https://customer-assets.emergentagent.com/job_377944f9-165d-4c13-90e7-adb275a81715/artifacts/cijer2zr_IMG_7844.png",
+    "icons": "Lucide React (No Emojis)"
+  },
+  "typography": {
+    "headings": {
+      "family": "Syne, Space Grotesk, sans-serif",
+      "weights": ["600", "700", "800"],
+      "usage": "Use for all H1-H3. Tight tracking (-0.02em to -0.05em).",
+      "import_url": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=Manrope:wght@200;300;400;500;600;700;800&display=swap"
+    },
+    "body": {
+      "family": "Manrope, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Use for paragraphs, UI elements, labels. Normal or slight loose tracking."
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "weights": ["400"],
+      "usage": "Use for code snippets, technical specs, and the 'Desk' product theme."
+    }
+  },
+  "colors": {
+    "themes": {
+      "default": {
+        "name": "Studio Neon Forge",
+        "bg_primary": "#030712",
+        "bg_secondary": "#0f172a",
+        "text_primary": "#ffffff",
+        "text_secondary": "#94a3b8",
+        "accent_primary": "#00f0ff",
+        "accent_secondary": "#bd00ff",
+        "accent_tertiary": "#ff00ff",
+        "border": "rgba(255,255,255,0.1)",
+        "glass": "rgba(3, 7, 18, 0.7)"
+      },
+      "habit": {
+        "name": "Habit Cyan Glass",
+        "bg_primary": "#020617",
+        "bg_secondary": "#0f172a",
+        "text_primary": "#f8fafc",
+        "text_secondary": "#64748b",
+        "accent_primary": "#22d3ee",
+        "accent_secondary": "#0ea5e9",
+        "glass_border": "rgba(34, 211, 238, 0.2)",
+        "glass_bg": "rgba(34, 211, 238, 0.05)"
+      },
+      "desk": {
+        "name": "Midnight Terminal",
+        "bg_primary": "#0f172a",
+        "bg_secondary": "#1e293b",
+        "text_primary": "#e2e8f0",
+        "text_secondary": "#94a3b8",
+        "accent_primary": "#22c55e",
+        "accent_secondary": "#eab308",
+        "accent_tertiary": "#3b82f6",
+        "panel_bg": "#14532d",
+        "note_bg": "#facc15",
+        "paper_bg": "#374151"
+      },
+      "studio": {
+        "name": "Technical Neon Pipeline",
+        "bg_primary": "#000000",
+        "bg_secondary": "#111111",
+        "text_primary": "#ededed",
+        "text_secondary": "#a1a1aa",
+        "accent_primary": "#d946ef",
+        "accent_secondary": "#8b5cf6",
+        "pipeline_glow": "0 0 20px rgba(217, 70, 239, 0.5)"
+      }
+    }
+  },
+  "layout": {
+    "grid_system": {
+      "marketing": "Bento Grid: grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-6",
+      "dashboard": "Dense Grid: grid-cols-1 md:grid-cols-4 gap-4"
+    },
+    "spacing": {
+      "container_padding": "px-6 md:px-12 lg:px-24",
+      "section_gap": "py-24 md:py-32",
+      "element_gap": "gap-4 md:gap-8"
+    },
+    "border_radius": {
+      "default": "rounded-xl",
+      "card": "rounded-2xl",
+      "button": "rounded-full"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-white text-black hover:bg-gray-200 transition-all duration-300 font-semibold px-8 py-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)]",
+      "secondary": "bg-transparent border border-white/20 text-white hover:bg-white/10 transition-all duration-300 px-8 py-3 rounded-full backdrop-blur-md",
+      "neon": "bg-cyan-500 text-black font-bold hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] hover:bg-cyan-400 transition-all duration-300 px-8 py-3 rounded-full uppercase tracking-widest text-xs"
+    },
+    "cards": {
+      "glass": "bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-500 group relative overflow-hidden",
+      "solid": "bg-zinc-900 border border-zinc-800 rounded-2xl p-8 hover:bg-zinc-800 transition-all duration-300",
+      "interactive": "cursor-pointer transform hover:-translate-y-2 transition-transform duration-500"
+    },
+    "inputs": {
+      "default": "bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/40 transition-all duration-300"
+    }
+  },
+  "visual_enhancers": {
+    "gradients": {
+      "glow_cyan": "radial-gradient(circle at center, rgba(34,211,238,0.15) 0%, rgba(0,0,0,0) 70%)",
+      "glow_magenta": "radial-gradient(circle at center, rgba(217,70,239,0.15) 0%, rgba(0,0,0,0) 70%)",
+      "mesh": "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#000] to-[#000]"
+    },
+    "textures": {
+      "noise": "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E\")"
+    }
+  },
+  "motion": {
+    "reduced_motion": "Ensure all animations respect prefers-reduced-motion: reduce",
+    "transitions": {
+      "default": "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+      "slow": "all 0.8s cubic-bezier(0.16, 1, 0.3, 1)"
+    },
+    "scroll_reveal": {
+      "initial": { "opacity": 0, "y": 40 },
+      "whileInView": { "opacity": 1, "y": 0 },
+      "viewport": { "once": true, "margin": "-100px" },
+      "transition": { "duration": 0.8, "ease": "easeOut" }
+    }
+  },
+  "assets": {
+    "images": [
+      {
+        "category": "Hero Background",
+        "url": "https://images.unsplash.com/photo-1764268602042-88b05a211378?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Abstract swirling purple and blue light trails for Home Hero"
+      },
+      {
+        "category": "Studio Vibes",
+        "url": "https://images.pexels.com/photos/31032751/pexels-photo-31032751.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Dynamic abstract neon glow for Studio App section"
+      },
+      {
+        "category": "Desk Setup",
+        "url": "https://images.unsplash.com/photo-1760278041881-e64e501d009c?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Dark minimalist desk setup for Desk product page"
+      },
+      {
+        "category": "Technology/Coding",
+        "url": "https://images.unsplash.com/photo-1751200065697-4461cc2b43cb?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Dimly lit laptop screen for Coding/Dev context"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: Use the 'data-theme' attribute on the <html> or a wrapper <div> to switch CSS variables for colors.",
+    "Install 'framer-motion' for all animations. Do not use CSS keyframes for complex sequences.",
+    "Use 'lucide-react' for all icons. Stroke width should be 1.5px for elegant look.",
+    "For the 'Waitlist Modal', make it a global component accessible via Context or Zustand store.",
+    "Implement 'react-helmet-async' for SEO titles per page.",
+    "Ensure the 'Footer' is massive (py-20) with big typography.",
+    "Do not use generic 'Inter' font. Import 'Syne' and 'Space Grotesk' from Google Fonts.",
+    "The 'Desk' product page should feel like a modular grid (Bento style) with specific colored tiles as described in the prompt.",
+    "The 'Habit' product page should use glassmorphism heavily (backdrop-blur-xl)."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic outputs. Avoid this.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: 'transition: all'. This results in breaking transforms.",
+    "You MUST NOT center align the app container.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Subtle grain textures, noise overlays, custom cursors.",
+    "Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN."
+  ]
+}
