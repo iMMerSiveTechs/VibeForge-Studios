@@ -203,7 +203,6 @@ export default function DeskPage() {
         <meta name="description" content="Master Plan. Task Planner. Stickies. Steno Notebook. Vault. Journal. One modular command surface for plans, tasks, capture, and notes." />
         <meta property="og:title" content="VibeForge Desk — Your Modular Command Surface" />
         <meta property="og:description" content="A modular command surface for plans, tasks, capture, and notes." />
-        <script type="application/ld+json">{deskSchema}</script>
       </Helmet>
 
       {/* ─── HERO ─── */}

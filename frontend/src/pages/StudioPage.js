@@ -141,7 +141,6 @@ export default function StudioPage() {
         <meta name="description" content="An automated app creation pipeline. Blueprint, spec, UI kit, build plan, QA checklist, store assets, ASO copy, and launch templates — all delivered." />
         <meta property="og:title" content="VibeForge Studios App — From Idea to App Store" />
         <meta property="og:description" content="An automated app creation pipeline. From blueprint to launch in a disciplined workflow." />
-        <script type="application/ld+json">{studioSchema}</script>
       </Helmet>
 
       {/* ─── HERO ─── */}

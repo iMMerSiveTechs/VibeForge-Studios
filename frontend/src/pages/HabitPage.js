@@ -174,8 +174,6 @@ export default function HabitPage() {
         <meta name="description" content="Identity-first habit building with 30-day routes that turn intention into consistency. Habits, todos, focus timer, and Cerebra AI coach." />
         <meta property="og:title" content="Habit — Become Who You're Meant to Be" />
         <meta property="og:description" content="Identity-first habit building with 30-day routes that turn intention into consistency." />
-        <meta name="twitter:card" content="summary_large_image" />
-        <script type="application/ld+json">{habitSchema}</script>
       </Helmet>
 
       {/* ─── HERO ─── */}

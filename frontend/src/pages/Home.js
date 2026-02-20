@@ -78,7 +78,6 @@ export default function Home() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="VibeForge Studios — Forge What's Next" />
         <meta name="twitter:description" content="A product studio building disciplined systems for identity, execution, and creation." />
-        <script type="application/ld+json">{orgSchema}</script>
       </Helmet>
 
       {/* ─── HERO ─── */}
