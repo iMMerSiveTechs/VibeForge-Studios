@@ -1,72 +1,131 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import time
+from collections import defaultdict
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, Literal
 import uuid
 from datetime import datetime, timezone
-
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+# Simple in-memory rate limiter
+_request_log: dict = defaultdict(list)
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
 
-# Add your routes to the router instead of directly to app
+def _rate_limit(ip: str, limit: int = 10, window: int = 3600) -> bool:
+    now = time.time()
+    _request_log[ip] = [t for t in _request_log[ip] if now - t < window]
+    if len(_request_log[ip]) >= limit:
+        return False
+    _request_log[ip].append(now)
+    return True
+
+
+# ─── Models ────────────────────────────────────────────────────────────────
+
+class WaitlistCreate(BaseModel):
+    email: EmailStr
+    productKey: Literal["ecosystem", "habit", "studio", "desk"]
+    goalOptional: Optional[str] = None
+    sourcePage: Optional[str] = None
+    hp: Optional[str] = None  # honeypot field
+
+
+class SupportCreate(BaseModel):
+    name: Optional[str] = None
+    email: EmailStr
+    message: str
+    hp: Optional[str] = None  # honeypot field
+
+
+# ─── Waitlist ───────────────────────────────────────────────────────────────
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "VibeForge Studios API", "status": "operational"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+@api_router.post("/waitlist")
+async def join_waitlist(data: WaitlistCreate, request: Request):
+    # Honeypot — silently succeed for bots
+    if data.hp:
+        return {"success": True, "message": "You're in. Founder access will be sent at launch."}
 
-# Include the router in the main app
+    client_ip = request.client.host if request.client else "unknown"
+    if not _rate_limit(client_ip, limit=15, window=3600):
+        raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
+
+    existing = await db.waitlist.find_one(
+        {"email": str(data.email), "productKey": data.productKey},
+        {"_id": 0}
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Already on the list.")
+
+    doc = {
+        "id": str(uuid.uuid4()),
+        "email": str(data.email),
+        "productKey": data.productKey,
+        "goalOptional": data.goalOptional,
+        "sourcePage": data.sourcePage,
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.waitlist.insert_one(doc)
+    logger.info(f"Waitlist signup: {data.email} → {data.productKey}")
+    return {"success": True, "message": "You're in. Founder access will be sent at launch."}
+
+
+@api_router.get("/waitlist/count")
+async def waitlist_count():
+    total = await db.waitlist.count_documents({})
+    return {"total": total}
+
+
+# ─── Support ────────────────────────────────────────────────────────────────
+
+@api_router.post("/support")
+async def submit_support(data: SupportCreate, request: Request):
+    if data.hp:
+        return {"success": True}
+
+    client_ip = request.client.host if request.client else "unknown"
+    if not _rate_limit(client_ip, limit=5, window=3600):
+        raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
+
+    if len(data.message.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Message too short.")
+
+    doc = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "email": str(data.email),
+        "message": data.message.strip(),
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.support_messages.insert_one(doc)
+    logger.info(f"Support message from: {data.email}")
+    return {"success": True, "message": "Message received. We'll be in touch."}
+
+
+# ─── App setup ──────────────────────────────────────────────────────────────
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,12 +136,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
