@@ -184,14 +184,14 @@ function WaitlistInline({ product }) {
   );
 }
 
-const deskSchema = {
+const deskSchema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'VibeForge Desk',
   applicationCategory: 'ProductivityApplication',
   operatingSystem: 'iOS, Android',
   description: 'A modular command surface for plans, tasks, capture, and notes.',
-};
+});
 
 export default function DeskPage() {
   const { openWaitlist } = useWaitlist();
@@ -203,7 +203,7 @@ export default function DeskPage() {
         <meta name="description" content="Master Plan. Task Planner. Stickies. Steno Notebook. Vault. Journal. One modular command surface for plans, tasks, capture, and notes." />
         <meta property="og:title" content="VibeForge Desk — Your Modular Command Surface" />
         <meta property="og:description" content="A modular command surface for plans, tasks, capture, and notes." />
-        <script type="application/ld+json">{JSON.stringify(deskSchema)}</script>
+        <script type="application/ld+json">{deskSchema}</script>
       </Helmet>
 
       {/* ─── HERO ─── */}

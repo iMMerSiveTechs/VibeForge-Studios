@@ -151,7 +151,7 @@ function WaitlistInline({ product = 'habit' }) {
   );
 }
 
-const habitSchema = {
+const habitSchema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'Habit',
@@ -162,7 +162,7 @@ const habitSchema = {
     { '@type': 'Offer', name: 'Pro', price: '19.99', priceCurrency: 'USD' },
     { '@type': 'Offer', name: 'Elite', price: '29.99', priceCurrency: 'USD' },
   ],
-};
+});
 
 export default function HabitPage() {
   const { openWaitlist } = useWaitlist();
@@ -175,7 +175,7 @@ export default function HabitPage() {
         <meta property="og:title" content="Habit — Become Who You're Meant to Be" />
         <meta property="og:description" content="Identity-first habit building with 30-day routes that turn intention into consistency." />
         <meta name="twitter:card" content="summary_large_image" />
-        <script type="application/ld+json">{JSON.stringify(habitSchema)}</script>
+        <script type="application/ld+json">{habitSchema}</script>
       </Helmet>
 
       {/* ─── HERO ─── */}

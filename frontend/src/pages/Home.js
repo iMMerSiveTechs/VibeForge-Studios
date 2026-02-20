@@ -55,14 +55,14 @@ const PRINCIPLES = [
   { icon: Rocket, title: 'Ship relentlessly', desc: 'Done beats perfect. Iteration compounds over time.' },
 ];
 
-const orgSchema = {
+const orgSchema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'VibeForge Studios LLC',
   url: 'https://habit-protocol.preview.emergentagent.com',
   description: 'A product studio building disciplined systems for identity, execution, and creation.',
   email: 'immersivetechs@icloud.com',
-};
+});
 
 export default function Home() {
   const { openWaitlist } = useWaitlist();
@@ -78,7 +78,7 @@ export default function Home() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="VibeForge Studios — Forge What's Next" />
         <meta name="twitter:description" content="A product studio building disciplined systems for identity, execution, and creation." />
-        <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
+        <script type="application/ld+json">{orgSchema}</script>
       </Helmet>
 
       {/* ─── HERO ─── */}
