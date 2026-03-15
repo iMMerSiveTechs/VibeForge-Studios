@@ -1,7 +1,0 @@
-/* App-level minimal overrides — all theming is in index.css */
-
-/* Ensure full height layout */
-#root {
-  min-height: 100vh;
-  background-color: var(--bg0);
-}
