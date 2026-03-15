@@ -44,6 +44,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(app)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="project-detail" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="project-ide" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>
       <Toast />
     </ThemeProvider>

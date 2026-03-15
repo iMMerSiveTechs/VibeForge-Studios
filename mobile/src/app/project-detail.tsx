@@ -23,6 +23,7 @@ import {
   Edit3,
   Upload,
   Sparkles,
+  Code2,
 } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { api } from "@/lib/api/api";
@@ -405,12 +406,20 @@ export default function ProjectDetailScreen() {
         {/* Actions */}
         <View className="space-y-3 mb-4">
           <Button
-            label={isUploadingZip ? "IMPORTING..." : "IMPORT ZIP"}
-            onPress={handleZipUpload}
-            variant="primary"
-            icon={<Upload size={16} color="#000" />}
-            loading={isUploadingZip}
+            label="OPEN IDE"
+            onPress={() => router.push({ pathname: "/project-ide", params: { id } })}
+            variant="secondary"
+            icon={<Code2 size={16} color="#000" />}
           />
+          <View className="mt-2">
+            <Button
+              label={isUploadingZip ? "IMPORTING..." : "IMPORT ZIP"}
+              onPress={handleZipUpload}
+              variant="primary"
+              icon={<Upload size={16} color="#000" />}
+              loading={isUploadingZip}
+            />
+          </View>
           {parsedFiles.length > 0 && !project.vfAppSpec ? (
             <View className="mt-2">
               <Button

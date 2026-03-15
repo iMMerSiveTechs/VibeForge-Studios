@@ -138,4 +138,187 @@ projectsRouter.delete("/:id", async (c) => {
   return c.json({ data: { success: true } });
 });
 
+// --- File CRUD within a project ---
+
+// Helper: parse files JSON from project
+function parseFiles(filesJson: string): Array<{ path: string; content: string }> {
+  try {
+    return JSON.parse(filesJson);
+  } catch {
+    return [];
+  }
+}
+
+// GET /api/projects/:id/files - list file paths (lightweight, no content)
+projectsRouter.get("/:id/files", async (c) => {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+  }
+
+  const id = c.req.param("id");
+  const project = await db.project.findUnique({ where: { id } });
+  if (!project || project.userId !== user.id) {
+    return c.json({ error: { message: "Project not found", code: "NOT_FOUND" } }, 404);
+  }
+
+  const files = parseFiles(project.files);
+  const paths = files.map((f) => f.path);
+  return c.json({ data: paths });
+});
+
+// GET /api/projects/:id/file?path=... - get single file content
+projectsRouter.get("/:id/file", async (c) => {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+  }
+
+  const id = c.req.param("id");
+  const filePath = c.req.query("path");
+  if (!filePath) {
+    return c.json({ error: { message: "Missing path query param", code: "BAD_REQUEST" } }, 400);
+  }
+
+  const project = await db.project.findUnique({ where: { id } });
+  if (!project || project.userId !== user.id) {
+    return c.json({ error: { message: "Project not found", code: "NOT_FOUND" } }, 404);
+  }
+
+  const files = parseFiles(project.files);
+  const file = files.find((f) => f.path === filePath);
+  if (!file) {
+    return c.json({ error: { message: "File not found", code: "NOT_FOUND" } }, 404);
+  }
+
+  return c.json({ data: file });
+});
+
+// PUT /api/projects/:id/file - create or update a file
+projectsRouter.put(
+  "/:id/file",
+  zValidator(
+    "json",
+    z.object({
+      path: z.string().min(1),
+      content: z.string(),
+    })
+  ),
+  async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+    }
+
+    const id = c.req.param("id");
+    const project = await db.project.findUnique({ where: { id } });
+    if (!project || project.userId !== user.id) {
+      return c.json({ error: { message: "Project not found", code: "NOT_FOUND" } }, 404);
+    }
+
+    const { path: filePath, content } = c.req.valid("json");
+    const files = parseFiles(project.files);
+    const idx = files.findIndex((f) => f.path === filePath);
+
+    if (idx >= 0) {
+      files[idx]!.content = content;
+    } else {
+      files.push({ path: filePath, content });
+    }
+
+    await db.project.update({
+      where: { id },
+      data: { files: JSON.stringify(files) },
+    });
+
+    return c.json({ data: { path: filePath, content } });
+  }
+);
+
+// POST /api/projects/:id/file/rename - rename a file
+projectsRouter.post(
+  "/:id/file/rename",
+  zValidator(
+    "json",
+    z.object({
+      oldPath: z.string().min(1),
+      newPath: z.string().min(1),
+    })
+  ),
+  async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+    }
+
+    const id = c.req.param("id");
+    const project = await db.project.findUnique({ where: { id } });
+    if (!project || project.userId !== user.id) {
+      return c.json({ error: { message: "Project not found", code: "NOT_FOUND" } }, 404);
+    }
+
+    const { oldPath, newPath } = c.req.valid("json");
+    const files = parseFiles(project.files);
+
+    // Rename single file or all files under a folder
+    let renamed = 0;
+    for (const f of files) {
+      if (f.path === oldPath) {
+        f.path = newPath;
+        renamed++;
+      } else if (f.path.startsWith(oldPath + "/")) {
+        f.path = newPath + f.path.slice(oldPath.length);
+        renamed++;
+      }
+    }
+
+    if (renamed === 0) {
+      return c.json({ error: { message: "File not found", code: "NOT_FOUND" } }, 404);
+    }
+
+    await db.project.update({
+      where: { id },
+      data: { files: JSON.stringify(files) },
+    });
+
+    return c.json({ data: { renamed } });
+  }
+);
+
+// DELETE /api/projects/:id/file?path=... - delete a file
+projectsRouter.delete("/:id/file", async (c) => {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+  }
+
+  const id = c.req.param("id");
+  const filePath = c.req.query("path");
+  if (!filePath) {
+    return c.json({ error: { message: "Missing path query param", code: "BAD_REQUEST" } }, 400);
+  }
+
+  const project = await db.project.findUnique({ where: { id } });
+  if (!project || project.userId !== user.id) {
+    return c.json({ error: { message: "Project not found", code: "NOT_FOUND" } }, 404);
+  }
+
+  const files = parseFiles(project.files);
+  // Delete file or all files under folder
+  const filtered = files.filter(
+    (f) => f.path !== filePath && !f.path.startsWith(filePath + "/")
+  );
+
+  if (filtered.length === files.length) {
+    return c.json({ error: { message: "File not found", code: "NOT_FOUND" } }, 404);
+  }
+
+  await db.project.update({
+    where: { id },
+    data: { files: JSON.stringify(filtered) },
+  });
+
+  return c.json({ data: { deleted: files.length - filtered.length } });
+});
+
 export { projectsRouter };
