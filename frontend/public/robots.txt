@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-
-Sitemap: https://habit-protocol.preview.emergentagent.com/sitemap.xml

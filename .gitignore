@@ -77,7 +77,31 @@ agenthub/agents/youtube/db
 .cache/
 
 # Mobile development
-android-sdk/ -e 
+android-sdk/
+
+# Expo / React Native
+.expo/
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
 # Environment files
+.env
 *.env
 *.env.*
+!.env.example
+
+# Bun
+bun.lockb

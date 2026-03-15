@@ -1,0 +1,15 @@
+export const C = {
+  bg: "#050505",
+  s1: "#0D0D0D",
+  s2: "#141414",
+  green: "#00C853",
+  cy: "#00FFFF",
+  mg: "#FF00FF",
+  text: "#F0F0F0",
+  dim: "#555555",
+  mid: "#999999",
+  b1: "#1E1E1E",
+  b2: "#2A2A2A",
+  warn: "#FFD60A",
+  red: "#FF3B30",
+} as const;
