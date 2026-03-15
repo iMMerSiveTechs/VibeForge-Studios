@@ -19,7 +19,10 @@ import type {
   EngineError,
 } from "../types";
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL!;
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+if (!BACKEND_URL) {
+  throw new Error("EXPO_PUBLIC_BACKEND_URL is not set");
+}
 
 // Raw SSE event shapes from the backend
 interface RawRouteEvent {

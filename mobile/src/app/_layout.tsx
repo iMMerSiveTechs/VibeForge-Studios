@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { Toast } from '@/components/ui/Toast';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { authClient } from '@/lib/auth/auth-client';
@@ -81,6 +82,7 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardProvider>
@@ -91,5 +93,6 @@ export default function RootLayout() {
         </KeyboardProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

@@ -60,13 +60,20 @@ export default function EnvTab() {
         }))
     : [];
 
+  const pendingToastRef = React.useRef<string>("");
+
   const { mutate: saveSettings, isPending: isSaving } = useMutation({
     mutationFn: (data: SettingsMap) =>
       api.put<SettingsMap>("/api/settings", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
+      if (pendingToastRef.current) {
+        showToast(pendingToastRef.current);
+        pendingToastRef.current = "";
+      }
     },
     onError: () => {
+      pendingToastRef.current = "";
       showToast("Failed to save");
     },
   });
@@ -89,18 +96,18 @@ export default function EnvTab() {
       [fullKey]: newValue.trim(),
     };
 
+    pendingToastRef.current = `${sanitizedKey} added`;
     saveSettings(updated);
     setNewKey("");
     setNewValue("");
     setIsAdding(false);
-    showToast(`${sanitizedKey} added`);
   };
 
   const handleDelete = (key: string, rawKey: string) => {
     const updated: SettingsMap = { ...(settings ?? {}) };
     delete updated[key];
+    pendingToastRef.current = `${rawKey} removed`;
     saveSettings(updated);
-    showToast(`${rawKey} removed`);
   };
 
   const toggleShowValue = (key: string) => {

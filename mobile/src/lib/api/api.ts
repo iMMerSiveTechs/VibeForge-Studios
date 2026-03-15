@@ -10,7 +10,10 @@ interface ApiResponse<T> {
   data: T;
 }
 
-const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL!;
+const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+if (!baseUrl) {
+  throw new Error("EXPO_PUBLIC_BACKEND_URL is not set");
+}
 
 interface ApiError {
   error: { message: string; code?: string };

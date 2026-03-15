@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -97,10 +97,12 @@ export default function ProjectDetailScreen() {
   });
 
   // Sync notes from project once loaded
-  if (project && !notesLoaded) {
-    setNotes(project.notes ?? "");
-    setNotesLoaded(true);
-  }
+  useEffect(() => {
+    if (project && !notesLoaded) {
+      setNotes(project.notes ?? "");
+      setNotesLoaded(true);
+    }
+  }, [project, notesLoaded]);
 
   // Update notes mutation
   const { mutate: updateNotes } = useMutation({
