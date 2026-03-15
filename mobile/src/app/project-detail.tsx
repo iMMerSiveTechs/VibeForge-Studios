@@ -264,6 +264,8 @@ export default function ProjectDetailScreen() {
           onPress={() => router.back()}
           className="w-9 h-9 items-center justify-center rounded-lg bg-vf-s2 mr-3"
           hitSlop={8}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <ArrowLeft size={18} color={C.text} />
         </Pressable>

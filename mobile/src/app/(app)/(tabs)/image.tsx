@@ -6,7 +6,7 @@ import {
   Pressable,
   Image,
   FlatList,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   TextInput,
   Modal,
@@ -26,9 +26,7 @@ import { useToastStore } from "@/lib/state/toast-store";
 import { Box } from "@/components/ui/Box";
 import { api } from "@/lib/api/api";
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
 const NUM_COLS = 3;
-const CELL_SIZE = (SCREEN_WIDTH - 40 - (NUM_COLS - 1) * 6) / NUM_COLS;
 
 interface Asset {
   id: string;
@@ -41,6 +39,8 @@ interface Asset {
 }
 
 export default function ImageTab() {
+  const { width: screenWidth } = useWindowDimensions();
+  const cellSize = (screenWidth - 40 - (NUM_COLS - 1) * 6) / NUM_COLS;
   const [isPickerLoading, setIsPickerLoading] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -226,6 +226,8 @@ export default function ImageTab() {
         <Pressable
           onPress={handlePickImage}
           disabled={isPickerLoading}
+          accessibilityLabel="Upload image"
+          accessibilityRole="button"
           style={({ pressed }) => ({
             flex: 1,
             flexDirection: "row",
@@ -261,6 +263,8 @@ export default function ImageTab() {
         <Pressable
           onPress={handleGenerateImage}
           disabled={isGenerating}
+          accessibilityLabel="Generate image"
+          accessibilityRole="button"
           style={({ pressed }) => ({
             flex: 1,
             flexDirection: "row",
@@ -302,6 +306,7 @@ export default function ImageTab() {
           placeholder="Describe the image you want to create..."
           placeholderTextColor={C.dim}
           multiline
+          accessibilityLabel="Image generation prompt"
           style={{
             backgroundColor: C.s1,
             borderWidth: 1,
@@ -404,8 +409,8 @@ export default function ImageTab() {
           renderItem={({ item }) => (
             <View
               style={{
-                width: CELL_SIZE,
-                height: CELL_SIZE,
+                width: cellSize,
+                height: cellSize,
                 borderRadius: 8,
                 overflow: "hidden",
                 backgroundColor: C.s1,
@@ -415,6 +420,8 @@ export default function ImageTab() {
             >
               <Pressable
                 onPress={() => setPreviewUrl(item.url)}
+                accessibilityLabel={`Preview ${item.filename}`}
+                accessibilityRole="image"
                 style={{ flex: 1 }}
               >
                 <Image
@@ -425,6 +432,8 @@ export default function ImageTab() {
               </Pressable>
               <Pressable
                 onPress={() => deleteAsset(item.id)}
+                accessibilityLabel="Delete image"
+                accessibilityRole="button"
                 style={({ pressed }) => ({
                   position: "absolute",
                   top: 4,
@@ -477,6 +486,8 @@ export default function ImageTab() {
         >
           <Pressable
             onPress={() => setPreviewUrl(null)}
+            accessibilityLabel="Close preview"
+            accessibilityRole="button"
             style={{
               position: "absolute",
               top: 60,
@@ -496,8 +507,8 @@ export default function ImageTab() {
             <Image
               source={{ uri: previewUrl }}
               style={{
-                width: SCREEN_WIDTH - 40,
-                height: SCREEN_WIDTH - 40,
+                width: screenWidth - 40,
+                height: screenWidth - 40,
                 borderRadius: 12,
               }}
               resizeMode="contain"

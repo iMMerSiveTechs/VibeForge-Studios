@@ -162,6 +162,8 @@ export default function EnvTab() {
             </View>
             <Pressable
               onPress={() => setIsAdding((v) => !v)}
+              accessibilityLabel={isAdding ? 'Cancel adding' : 'Add variable'}
+              accessibilityRole="button"
               style={({ pressed }) => ({
                 flexDirection: "row",
                 alignItems: "center",
@@ -262,6 +264,7 @@ export default function EnvTab() {
                   placeholder="MY_API_KEY"
                   placeholderTextColor={C.dim}
                   autoCapitalize="characters"
+                  accessibilityLabel="Variable name"
                   style={{
                     backgroundColor: C.bg,
                     borderWidth: 1,
@@ -295,6 +298,7 @@ export default function EnvTab() {
                   placeholder="Enter value..."
                   placeholderTextColor={C.dim}
                   secureTextEntry
+                  accessibilityLabel="Variable value"
                   style={{
                     backgroundColor: C.bg,
                     borderWidth: 1,
@@ -440,6 +444,8 @@ export default function EnvTab() {
                       >
                         <Pressable
                           onPress={() => toggleShowValue(envVar.key)}
+                          accessibilityLabel={`${visible ? 'Hide' : 'Show'} ${envVar.rawKey} value`}
+                          accessibilityRole="button"
                           style={({ pressed }) => ({
                             width: 28,
                             height: 28,
@@ -462,6 +468,8 @@ export default function EnvTab() {
                           onPress={() =>
                             handleDelete(envVar.key, envVar.rawKey)
                           }
+                          accessibilityLabel={`Delete ${envVar.rawKey}`}
+                          accessibilityRole="button"
                           style={({ pressed }) => ({
                             width: 28,
                             height: 28,

@@ -117,7 +117,7 @@ export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
               </View>
             ) : null}
           </View>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="Close activity" accessibilityRole="button">
             <X size={18} color={C.dim} />
           </Pressable>
         </View>
@@ -143,6 +143,7 @@ export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
               placeholderTextColor={C.dim}
               value={search}
               onChangeText={setSearch}
+              accessibilityLabel="Search runs"
               style={{
                 flex: 1,
                 color: C.text,
@@ -187,6 +188,8 @@ export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
               return (
                 <Pressable
                   onPress={() => setSelectedRun(run)}
+                  accessibilityLabel={`${run.project?.name ?? 'Untitled'} run, ${provider.name}, ${run.status}`}
+                  accessibilityRole="button"
                   style={{
                     flexDirection: "row",
                     alignItems: "center",

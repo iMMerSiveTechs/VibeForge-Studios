@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   Pressable,
   ActivityIndicator,
   TextInput,
@@ -329,6 +329,8 @@ export default function AudioTab() {
         <Pressable
           onPress={handlePickAudio}
           disabled={isPickerLoading}
+          accessibilityLabel="Upload audio"
+          accessibilityRole="button"
           style={({ pressed }) => ({
             flex: 1,
             flexDirection: "row",
@@ -364,6 +366,8 @@ export default function AudioTab() {
         <Pressable
           onPress={handleTTS}
           disabled={isTtsLoading}
+          accessibilityLabel="Generate speech"
+          accessibilityRole="button"
           style={({ pressed }) => ({
             flex: 1,
             flexDirection: "row",
@@ -405,6 +409,7 @@ export default function AudioTab() {
           placeholder="Text to convert to speech..."
           placeholderTextColor={C.dim}
           multiline
+          accessibilityLabel="Text to convert to speech"
           style={{
             backgroundColor: C.s1,
             borderWidth: 1,
@@ -493,32 +498,33 @@ export default function AudioTab() {
           </Box>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={audioAssets}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingBottom: 40,
           }}
-        >
-          <Text
-            style={{
-              color: C.dim,
-              fontSize: 10,
-              fontFamily: "monospace",
-              letterSpacing: 1,
-              textTransform: "uppercase",
-              marginBottom: 10,
-            }}
-          >
-            Audio Library
-          </Text>
-
-          {audioAssets.map((asset) => {
+          ListHeaderComponent={
+            <Text
+              style={{
+                color: C.dim,
+                fontSize: 10,
+                fontFamily: "monospace",
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                marginBottom: 10,
+              }}
+            >
+              Audio Library
+            </Text>
+          }
+          renderItem={({ item: asset }) => {
             const isActive = playback.assetId === asset.id;
             const isPlaying = isActive && playback.isPlaying;
 
             return (
               <View
-                key={asset.id}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -534,6 +540,8 @@ export default function AudioTab() {
                 {/* Play/Pause button */}
                 <Pressable
                   onPress={() => handlePlay(asset)}
+                  accessibilityLabel={`${isPlaying ? 'Pause' : 'Play'} ${asset.filename}`}
+                  accessibilityRole="button"
                   style={({ pressed }) => ({
                     width: 40,
                     height: 40,
@@ -587,6 +595,8 @@ export default function AudioTab() {
                 {isActive ? (
                   <Pressable
                     onPress={handleStop}
+                    accessibilityLabel="Stop playback"
+                    accessibilityRole="button"
                     style={({ pressed }) => ({
                       width: 32,
                       height: 32,
@@ -603,6 +613,8 @@ export default function AudioTab() {
                 {/* Delete */}
                 <Pressable
                   onPress={() => handleDelete(asset.id)}
+                  accessibilityLabel={`Delete ${asset.filename}`}
+                  accessibilityRole="button"
                   style={({ pressed }) => ({
                     width: 32,
                     height: 32,
@@ -616,8 +628,8 @@ export default function AudioTab() {
                 </Pressable>
               </View>
             );
-          })}
-        </ScrollView>
+          }}
+        />
       )}
     </SafeAreaView>
   );

@@ -383,6 +383,8 @@ export default function ForgeScreen() {
               <TouchableOpacity
                 key={p.id}
                 onPress={() => setSelectedProjectId(p.id)}
+                accessibilityLabel={p.name}
+                accessibilityRole="button"
                 style={{
                   paddingHorizontal: 10,
                   paddingVertical: 4,
@@ -404,6 +406,8 @@ export default function ForgeScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <TouchableOpacity
             onPress={() => setShowAITools(true)}
+            accessibilityLabel="AI tools"
+            accessibilityRole="button"
             style={{
               width: 36,
               height: 36,
@@ -420,6 +424,8 @@ export default function ForgeScreen() {
 
           <TouchableOpacity
             onPress={() => setShowActivity(true)}
+            accessibilityLabel="Activity log"
+            accessibilityRole="button"
             style={{
               width: 36,
               height: 36,
@@ -436,6 +442,8 @@ export default function ForgeScreen() {
 
           <TouchableOpacity
             onPress={handleToggleMode}
+            accessibilityLabel={`Switch to ${clientMode === 'mock' ? 'live' : 'mock'} mode`}
+            accessibilityRole="button"
             style={{
               paddingHorizontal: 8,
               paddingVertical: 3,
@@ -479,6 +487,8 @@ export default function ForgeScreen() {
             <TouchableOpacity
               key={`${i}-${h.slice(0, 20)}`}
               onPress={() => setInputText(h)}
+              accessibilityLabel={h}
+              accessibilityRole="button"
               style={{
                 paddingHorizontal: 10,
                 paddingVertical: 3,
@@ -576,6 +586,8 @@ export default function ForgeScreen() {
       {/* ENGINE DRAWER TOGGLE */}
       <TouchableOpacity
         onPress={() => setDrawerOpen((o) => !o)}
+        accessibilityLabel="Toggle engine drawer"
+        accessibilityRole="button"
         style={{
           flexDirection: "row",
           alignItems: "center",
@@ -700,6 +712,7 @@ export default function ForgeScreen() {
           placeholder="Enter request\u2026"
           placeholderTextColor={COLORS.dimmer}
           multiline
+          accessibilityLabel="Enter request"
           style={{
             flex: 1,
             color: COLORS.text,
@@ -722,6 +735,8 @@ export default function ForgeScreen() {
         {isStreaming ? (
           <TouchableOpacity
             onPress={handleStop}
+            accessibilityLabel="Stop generation"
+            accessibilityRole="button"
             style={{
               width: 42,
               height: 42,
@@ -739,6 +754,8 @@ export default function ForgeScreen() {
           <TouchableOpacity
             onPress={handleSend}
             disabled={!inputText.trim()}
+            accessibilityLabel="Send request"
+            accessibilityRole="button"
             style={{
               paddingHorizontal: 16,
               height: 42,

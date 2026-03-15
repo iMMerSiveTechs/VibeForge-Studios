@@ -54,6 +54,8 @@ export function CodeViewer({ code, filename, language }: CodeViewerProps) {
           onPress={handleCopy}
           className="w-7 h-7 items-center justify-center rounded-md bg-vf-s2"
           hitSlop={8}
+          accessibilityLabel="Copy code"
+          accessibilityRole="button"
         >
           {copied ? (
             <Check size={14} color={C.green} />

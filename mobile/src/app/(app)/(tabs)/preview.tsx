@@ -313,8 +313,8 @@ function AudioNode({
         setSound(newSound);
         setIsPlaying(true);
       }
-    } catch (error) {
-      console.error("Error loading audio:", error);
+    } catch {
+      // Audio loading failed
     }
   };
 

@@ -96,6 +96,8 @@ function ProjectCard({
             disabled={isDeleting}
             className="w-9 h-9 items-center justify-center rounded-lg bg-vf-s2 active:opacity-60"
             hitSlop={4}
+            accessibilityLabel="Delete project"
+            accessibilityRole="button"
           >
             {isDeleting ? (
               <ActivityIndicator size="small" color={C.red} />
@@ -103,7 +105,7 @@ function ProjectCard({
               <Trash2 size={16} color={C.red} />
             )}
           </Pressable>
-          <View className="w-8 h-9 items-center justify-center">
+          <View className="w-8 h-9 items-center justify-center" accessibilityLabel="Open project">
             <ChevronRight size={16} color={C.dim} />
           </View>
         </View>
@@ -361,6 +363,7 @@ export default function ProjectsScreen() {
             onChangeText={setSearchQuery}
             placeholder="Search projects..."
             placeholderTextColor={C.dim}
+            accessibilityLabel="Search projects"
             style={{
               flex: 1,
               color: C.text,
@@ -371,7 +374,7 @@ export default function ProjectsScreen() {
             }}
           />
           {searchQuery.length > 0 ? (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={8} accessibilityLabel="Clear search" accessibilityRole="button">
               <X size={14} color={C.dim} />
             </Pressable>
           ) : null}
