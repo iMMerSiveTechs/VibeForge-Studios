@@ -22,7 +22,6 @@ import {
 } from "lucide-react-native";
 import { api } from "@/lib/api/api";
 import { C } from "@/theme/colors";
-import { useToastStore } from "@/lib/state/toast-store";
 import { Dialog } from "@/components/ui/Dialog";
 import { Tag } from "@/components/ui/Tag";
 import {
@@ -42,7 +41,6 @@ interface ActivityModalProps {
 export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
   const [search, setSearch] = useState("");
   const [selectedRun, setSelectedRun] = useState<Run | null>(null);
-  const showToast = useToastStore((s) => s.show);
 
   const { data: runs, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["runs"],

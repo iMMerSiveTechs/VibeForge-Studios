@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -32,8 +32,8 @@ interface EnvVar {
 
 function maskValue(value: string): string {
   if (!value || value.length === 0) return "";
-  if (value.length <= 8) return value.slice(0, 2) + "***";
-  return value.slice(0, 8) + "..." + value.slice(-3).replace(/./g, "*");
+  if (value.length <= 4) return "****";
+  return value.slice(0, 2) + "*".repeat(Math.min(value.length - 2, 20));
 }
 
 export default function EnvTab() {

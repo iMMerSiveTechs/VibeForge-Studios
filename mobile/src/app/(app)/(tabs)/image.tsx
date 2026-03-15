@@ -19,8 +19,6 @@ import {
   Sparkles,
   X,
   Grid2x2,
-  Download,
-  ZoomIn,
 } from "lucide-react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { C } from "@/theme/colors";

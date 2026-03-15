@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { Zap, Square, ChevronDown, ChevronUp, Cpu, Brain, Activity } from "lucide-react-native";
 import { engineClient } from "@/engine";
@@ -87,6 +88,95 @@ interface ModelOption {
   hiddenByDefault: boolean;
 }
 
+// ============ Sub-components (outside render to avoid remount) ============
+function PresetButton({
+  value,
+  preset,
+  onPress,
+}: {
+  value: "FAST" | "SMART" | "DEEP";
+  preset: string;
+  onPress: (v: "FAST" | "SMART" | "DEEP") => void;
+}) {
+  const isSelected = preset === value;
+  const color = PRESET_COLORS[value];
+  return (
+    <TouchableOpacity
+      onPress={() => onPress(value)}
+      style={{
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: isSelected ? color : COLORS.dimmer,
+        backgroundColor: isSelected ? color + "22" : "transparent",
+        marginRight: 6,
+      }}
+    >
+      <Text style={{ color: isSelected ? color : COLORS.dim, fontSize: 11, fontFamily: "monospace", fontWeight: "700", letterSpacing: 0.8 }}>
+        {value}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function ModelChips({
+  role,
+  roleKey,
+  roleModels,
+  selected,
+  onSelect,
+}: {
+  role: string;
+  roleKey: string;
+  roleModels: ModelOption[];
+  selected: string | undefined;
+  onSelect: (roleKey: string, modelId: string | null) => void;
+}) {
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <Text style={{ color: COLORS.dim, fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: 0.5 }}>
+        {role.toUpperCase()} MODEL
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <TouchableOpacity
+          onPress={() => onSelect(roleKey, null)}
+          style={{
+            paddingHorizontal: 9,
+            paddingVertical: 4,
+            borderRadius: 5,
+            borderWidth: 1,
+            borderColor: !selected ? COLORS.cyan : COLORS.dimmer,
+            backgroundColor: !selected ? COLORS.cyan + "18" : "transparent",
+            marginRight: 5,
+          }}
+        >
+          <Text style={{ color: !selected ? COLORS.cyan : COLORS.dim, fontSize: 10, fontFamily: "monospace" }}>Auto</Text>
+        </TouchableOpacity>
+        {roleModels.map((m) => (
+          <TouchableOpacity
+            key={m.modelId}
+            onPress={() => onSelect(roleKey, m.modelId)}
+            style={{
+              paddingHorizontal: 9,
+              paddingVertical: 4,
+              borderRadius: 5,
+              borderWidth: 1,
+              borderColor: selected === m.modelId ? (ROLE_COLORS[role.toUpperCase()] ?? COLORS.cyan) : COLORS.dimmer,
+              backgroundColor: selected === m.modelId ? (ROLE_COLORS[role.toUpperCase()] ?? COLORS.cyan) + "18" : "transparent",
+              marginRight: 5,
+            }}
+          >
+            <Text style={{ color: selected === m.modelId ? (ROLE_COLORS[role.toUpperCase()] ?? COLORS.cyan) : COLORS.dim, fontSize: 10, fontFamily: "monospace" }}>
+              {m.displayName.replace("Claude ", "").replace("Gemini ", "")}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 // ============ Main Component ============
 export default function ForgeScreen() {
   const [inputText, setInputText] = useState<string>("");
@@ -107,10 +197,8 @@ export default function ForgeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const lineIdCounter = useRef<number>(0);
 
-  // Engine store phase
-  const phase = useEngineStore((s) => s.phase);
-  // Suppress unused variable warning — phase is read for potential future use
-  void phase;
+  // Engine store (for external consumers)
+  useEngineStore((s) => s.phase);
 
   // Load projects
   const { data: projects } = useQuery<Project[]>({
@@ -129,8 +217,7 @@ export default function ForgeScreen() {
   function getModelsForRole(): ModelOption[] {
     const tierForPreset: Record<string, string> = { FAST: "fast", SMART: "smart", DEEP: "max" };
     const tier = tierForPreset[preset] ?? "smart";
-    const visible = models;
-    return visible.sort((a, b) => {
+    return [...models].sort((a, b) => {
       const aMatch = a.tier === tier ? 0 : 1;
       const bMatch = b.tier === tier ? 0 : 1;
       const aRec = a.recommended ? 0 : 1;
@@ -139,11 +226,9 @@ export default function ForgeScreen() {
     });
   }
 
-  const newLineId = () => `l${++lineIdCounter.current}`;
-
   const addLine = useCallback((line: Omit<TerminalLine, "id">) => {
     setLines((prev) => [...prev, { ...line, id: `l${++lineIdCounter.current}` }]);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
   }, []);
 
   const appendToDelta = useCallback((role: string, delta: string) => {
@@ -154,11 +239,8 @@ export default function ForgeScreen() {
       }
       return [...prev, { id: `l${++lineIdCounter.current}`, role, text: delta }];
     });
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 30);
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
   }, []);
-
-  // Suppress unused newLineId function
-  void newLineId;
 
   const handleToggleMode = () => {
     const next = clientMode === "mock" ? "remote" : "mock";
@@ -236,83 +318,18 @@ export default function ForgeScreen() {
     setIsStreaming(false);
   }, []);
 
-  // ============ Sub-components ============
+  const handleModelSelect = useCallback((roleKey: string, modelId: string | null) => {
+    setOverrides((o) => {
+      if (modelId === null) {
+        const n = { ...o };
+        delete n[roleKey as keyof typeof o];
+        return n;
+      }
+      return { ...o, [roleKey]: modelId };
+    });
+  }, []);
 
-  // Preset button
-  function PresetButton({ value }: { value: "FAST" | "SMART" | "DEEP" }) {
-    const isSelected = preset === value;
-    const color = PRESET_COLORS[value];
-    return (
-      <TouchableOpacity
-        onPress={() => setPreset(value)}
-        style={{
-          paddingHorizontal: 12,
-          paddingVertical: 5,
-          borderRadius: 6,
-          borderWidth: 1,
-          borderColor: isSelected ? color : COLORS.dimmer,
-          backgroundColor: isSelected ? color + "22" : "transparent",
-          marginRight: 6,
-        }}
-      >
-        <Text style={{ color: isSelected ? color : COLORS.dim, fontSize: 11, fontFamily: "monospace", fontWeight: "700", letterSpacing: 0.8 }}>
-          {value}
-        </Text>
-      </TouchableOpacity>
-    );
-  }
-
-  // Model chip selector for a role
-  function ModelChips({ role, roleKey }: { role: string; roleKey: "builder" | "critic" | "reasoner" }) {
-    const roleModels = getModelsForRole();
-    const selected = overrides[roleKey];
-    return (
-      <View style={{ marginBottom: 10 }}>
-        <Text style={{ color: COLORS.dim, fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: 0.5 }}>
-          {role.toUpperCase()} MODEL
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity
-            onPress={() => setOverrides((o) => {
-              const n = { ...o };
-              delete n[roleKey];
-              return n;
-            })}
-            style={{
-              paddingHorizontal: 9,
-              paddingVertical: 4,
-              borderRadius: 5,
-              borderWidth: 1,
-              borderColor: !selected ? COLORS.cyan : COLORS.dimmer,
-              backgroundColor: !selected ? COLORS.cyan + "18" : "transparent",
-              marginRight: 5,
-            }}
-          >
-            <Text style={{ color: !selected ? COLORS.cyan : COLORS.dim, fontSize: 10, fontFamily: "monospace" }}>Auto</Text>
-          </TouchableOpacity>
-          {roleModels.map((m) => (
-            <TouchableOpacity
-              key={m.modelId}
-              onPress={() => setOverrides((o) => ({ ...o, [roleKey]: m.modelId }))}
-              style={{
-                paddingHorizontal: 9,
-                paddingVertical: 4,
-                borderRadius: 5,
-                borderWidth: 1,
-                borderColor: selected === m.modelId ? (ROLE_COLORS[role.toUpperCase()] ?? COLORS.cyan) : COLORS.dimmer,
-                backgroundColor: selected === m.modelId ? (ROLE_COLORS[role.toUpperCase()] ?? COLORS.cyan) + "18" : "transparent",
-                marginRight: 5,
-              }}
-            >
-              <Text style={{ color: selected === m.modelId ? (ROLE_COLORS[role.toUpperCase()] ?? COLORS.cyan) : COLORS.dim, fontSize: 10, fontFamily: "monospace" }}>
-                {m.displayName.replace("Claude ", "").replace("Gemini ", "")}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  }
+  const sortedModels = getModelsForRole();
 
   const selectedProject = projects?.find((p) => p.id === selectedProjectId) ?? projects?.[0] ?? null;
 
@@ -320,8 +337,9 @@ export default function ForgeScreen() {
   const costStr = finalMetrics ? `$${finalMetrics.estimatedCostUSD.toFixed(4)}` : null;
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }} edges={["top"]}>
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: COLORS.bg }}
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={90}
     >
@@ -452,7 +470,7 @@ export default function ForgeScreen() {
         >
           {history.map((h, i) => (
             <TouchableOpacity
-              key={i}
+              key={`${i}-${h.slice(0, 20)}`}
               onPress={() => setInputText(h)}
               style={{
                 paddingHorizontal: 10,
@@ -612,9 +630,9 @@ export default function ForgeScreen() {
             PRESET
           </Text>
           <View style={{ flexDirection: "row", marginBottom: 12 }}>
-            <PresetButton value="FAST" />
-            <PresetButton value="SMART" />
-            <PresetButton value="DEEP" />
+            <PresetButton value="FAST" preset={preset} onPress={setPreset} />
+            <PresetButton value="SMART" preset={preset} onPress={setPreset} />
+            <PresetButton value="DEEP" preset={preset} onPress={setPreset} />
           </View>
 
           {/* Scores if available */}
@@ -643,9 +661,9 @@ export default function ForgeScreen() {
               <Text style={{ color: COLORS.dim, fontSize: 10, fontFamily: "monospace", letterSpacing: 0.5, marginBottom: 8 }}>
                 MODEL OVERRIDES
               </Text>
-              <ModelChips role="BUILDER" roleKey="builder" />
-              <ModelChips role="CRITIC" roleKey="critic" />
-              <ModelChips role="REASONER" roleKey="reasoner" />
+              <ModelChips role="BUILDER" roleKey="builder" roleModels={sortedModels} selected={overrides.builder} onSelect={handleModelSelect} />
+              <ModelChips role="CRITIC" roleKey="critic" roleModels={sortedModels} selected={overrides.critic} onSelect={handleModelSelect} />
+              <ModelChips role="REASONER" roleKey="reasoner" roleModels={sortedModels} selected={overrides.reasoner} onSelect={handleModelSelect} />
             </ScrollView>
           ) : (
             <Text style={{ color: COLORS.dimmer, fontSize: 10, fontFamily: "monospace" }}>
@@ -741,5 +759,6 @@ export default function ForgeScreen() {
       {/* Activity Modal */}
       <ActivityModal isOpen={showActivity} onClose={() => setShowActivity(false)} />
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

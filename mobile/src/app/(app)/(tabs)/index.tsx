@@ -187,39 +187,26 @@ export default function ProjectsScreen() {
 
   const handleZipImport = useCallback(async () => {
     try {
-      console.log("[ZIP IMPORT] Starting import process...");
-
       // Step 1: Pick the zip file
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
         copyToCacheDirectory: true,
       });
 
-      console.log("[ZIP IMPORT] File picker result:", JSON.stringify(result, null, 2));
-
       if (result.canceled || !result.assets?.[0]) {
-        console.log("[ZIP IMPORT] User canceled or no file selected");
         return;
       }
 
       const file = result.assets[0];
-      console.log("[ZIP IMPORT] File selected:", {
-        name: file.name,
-        size: file.size,
-        uri: file.uri,
-        mimeType: file.mimeType,
-      });
 
       // Verify it's a zip
       if (!file.name?.endsWith(".zip")) {
-        console.log("[ZIP IMPORT] File validation failed: not a .zip file");
         showToast("Please select a .zip file");
         return;
       }
 
       // Verify we have a valid URI
       if (!file.uri || file.uri.trim() === "") {
-        console.log("[ZIP IMPORT] File validation failed: no valid URI");
         showToast("Invalid file URI");
         return;
       }
@@ -228,33 +215,24 @@ export default function ProjectsScreen() {
       let targetId: string | null = null;
 
       if (zipTargetProject) {
-        // Uploading to an existing project
         targetId = zipTargetProject.id;
-        console.log("[ZIP IMPORT] Using existing project:", targetId);
       } else if (zipProjectName.trim()) {
-        // Create a new project first
-        console.log("[ZIP IMPORT] Creating new project:", zipProjectName.trim());
         try {
           const newProject = await api.post<Project>("/api/projects", {
             name: zipProjectName.trim(),
           });
           targetId = newProject.id;
-          console.log("[ZIP IMPORT] New project created:", targetId);
-        } catch (createErr) {
-          console.error("[ZIP IMPORT] Failed to create project:", createErr);
+        } catch {
           showToast("Failed to create project");
           return;
         }
       } else {
-        console.log("[ZIP IMPORT] No target specified");
         showToast("Enter a project name or select existing");
         return;
       }
 
       setIsUploading(true);
       setZipDialogOpen(false);
-
-      console.log("[ZIP IMPORT] Starting upload to project:", targetId);
 
       // Step 3: Upload the zip file
       const formData = new FormData();
@@ -265,14 +243,10 @@ export default function ProjectsScreen() {
         type: file.mimeType ?? "application/zip",
       } as any);
 
-      console.log("[ZIP IMPORT] FormData prepared, uploading to:", `/api/projects/${targetId}/upload-zip`);
-
       const response = await api.upload<ZipUploadResponse>(
         `/api/projects/${targetId}/upload-zip`,
         formData
       );
-
-      console.log("[ZIP IMPORT] Upload successful:", JSON.stringify(response, null, 2));
 
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -292,19 +266,8 @@ export default function ProjectsScreen() {
       // Navigate to the project detail
       router.push({ pathname: "/project-detail", params: { id: targetId } });
     } catch (err) {
-      console.error("[ZIP IMPORT] Error occurred:", err);
-      console.error("[ZIP IMPORT] Error details:", {
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-        name: err instanceof Error ? err.name : undefined,
-      });
-
       const msg = err instanceof Error ? err.message : "Failed to import zip";
-      const detailedMsg = err instanceof Error && err.stack
-        ? `${msg}\n\nStack: ${err.stack.split('\n').slice(0, 3).join('\n')}`
-        : msg;
-
-      showToast(detailedMsg);
+      showToast(msg);
     } finally {
       setIsUploading(false);
       setZipProjectName("");

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -52,9 +52,16 @@ export default function SettingsScreen() {
     queryFn: () => api.get<{ models: ModelOption[]; presetDefaults: Record<string, unknown> }>("/api/models"),
   });
 
+  // Cleanup auto-save timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, []);
+
   // Refetch settings when screen comes into focus
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       refetch();
     }, [refetch])
   );

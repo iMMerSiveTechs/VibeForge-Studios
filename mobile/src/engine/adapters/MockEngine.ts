@@ -30,20 +30,20 @@ function sleep(ms: number): Promise<void> {
 }
 
 export class MockEngine implements EngineAdapter {
-  private aborted = false;
+  private abortedTurnId: string | null = null;
 
   async generate(message: string, callbacks: EngineCallbacks, _options?: EngineOptions): Promise<void> {
-    this.aborted = false;
-
     const turnId = generateTurnId();
     const role: EngineRole = "BUILDER";
     const startTime = Date.now();
+
+    const isAborted = () => this.abortedTurnId === turnId;
 
     // Phase: routing
     callbacks.onPhase("routing");
 
     await sleep(300);
-    if (this.aborted) return;
+    if (isAborted()) return;
 
     // Route decision
     const routeDecision: RouteDecision = {
@@ -59,19 +59,19 @@ export class MockEngine implements EngineAdapter {
     // Phase: thinking
     callbacks.onPhase("thinking", role);
     await sleep(400);
-    if (this.aborted) return;
+    if (isAborted()) return;
 
     // Phase: streaming
     callbacks.onPhase("streaming", role);
 
     // Stream character by character
     for (let i = 0; i < MOCK_OUTPUT.length; i++) {
-      if (this.aborted) return;
+      if (isAborted()) return;
       callbacks.onDelta({ role, delta: MOCK_OUTPUT[i] });
       await sleep(15);
     }
 
-    if (this.aborted) return;
+    if (isAborted()) return;
 
     // Phase: done
     const durationMs = Date.now() - startTime;
@@ -95,7 +95,7 @@ export class MockEngine implements EngineAdapter {
     callbacks.onPhase("done");
   }
 
-  async interrupt(_turnId: string): Promise<void> {
-    this.aborted = true;
+  async interrupt(turnId: string): Promise<void> {
+    this.abortedTurnId = turnId;
   }
 }
