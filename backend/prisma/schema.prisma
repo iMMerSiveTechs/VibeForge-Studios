@@ -21,6 +21,7 @@ model User {
   projects      Project[]
   assets        Asset[]
   settings      Setting[]
+  feedbacks     Feedback[]
 }
 
 model Session {
@@ -123,4 +124,14 @@ model Asset {
   sizeBytes   Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Feedback {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   @default("feature")
+  subject     String
+  description String
+  createdAt   DateTime @default(now())
 }

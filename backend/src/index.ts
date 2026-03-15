@@ -14,6 +14,7 @@ import { aiRouter } from "./routes/ai";
 import { devRouter } from "./routes/dev";
 import { vceHonoRouter } from "./routes/vce";
 import { modelsRouter } from "./routes/models";
+import { feedbackRouter } from "./routes/feedback";
 import { logger } from "hono/logger";
 
 // Type the Hono app with user/session variables
@@ -100,6 +101,7 @@ app.route("/api/files", filesRouter);
 app.route("/api/ai", aiRouter);
 app.route("/api/dev", devRouter);
 app.route("/api/vce", vceHonoRouter);
+app.route("/api/feedback", feedbackRouter);
 
 // Mount upload endpoint directly
 app.post("/api/upload", async (c) => {

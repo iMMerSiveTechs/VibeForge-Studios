@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   Pressable,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
@@ -17,23 +18,29 @@ import {
   Square,
   Trash2,
   Volume2,
+  Mic,
 } from "lucide-react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { C } from "@/theme/colors";
 import { useToastStore } from "@/lib/state/toast-store";
 import { Box } from "@/components/ui/Box";
+import { api } from "@/lib/api/api";
 
-interface AudioClip {
+interface Asset {
   id: string;
-  uri: string;
-  name: string;
-  duration?: number;
-  addedAt: Date;
+  fileId: string;
+  url: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: string;
 }
 
 interface PlaybackState {
-  clipId: string | null;
+  assetId: string | null;
   isPlaying: boolean;
   sound: Audio.Sound | null;
+  duration?: number;
 }
 
 function formatDuration(ms?: number): string {
@@ -44,17 +51,46 @@ function formatDuration(ms?: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 export default function AudioTab() {
-  const [clips, setClips] = useState<AudioClip[]>([]);
   const [isPickerLoading, setIsPickerLoading] = useState(false);
   const [playback, setPlayback] = useState<PlaybackState>({
-    clipId: null,
+    assetId: null,
     isPlaying: false,
     sound: null,
   });
+  const [ttsText, setTtsText] = useState("");
+  const [isTtsLoading, setIsTtsLoading] = useState(false);
   const showToast = useToastStore((s) => s.show);
+  const queryClient = useQueryClient();
 
-  const handlePickAudio = async () => {
+  // Fetch audio assets from backend
+  const { data: assets, isLoading } = useQuery({
+    queryKey: ["assets"],
+    queryFn: () => api.get<Asset[]>("/api/files"),
+  });
+
+  const audioAssets = (assets ?? []).filter((a) =>
+    a.contentType.startsWith("audio/")
+  );
+
+  // Delete asset
+  const { mutate: deleteAsset } = useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/api/files/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      showToast("Audio deleted");
+    },
+    onError: () => showToast("Failed to delete audio"),
+  });
+
+  // Upload audio to backend
+  const handlePickAudio = useCallback(async () => {
     setIsPickerLoading(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -64,95 +100,157 @@ export default function AudioTab() {
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        const newClips: AudioClip[] = result.assets.map((asset) => ({
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          uri: asset.uri,
-          name: asset.name ?? `audio-${Date.now()}`,
-          addedAt: new Date(),
-        }));
-        setClips((prev) => [...newClips, ...prev]);
-        showToast(`${newClips.length} audio file${newClips.length > 1 ? "s" : ""} added`);
+        let uploadedCount = 0;
+        for (const asset of result.assets) {
+          try {
+            const formData = new FormData();
+            formData.append("file", {
+              uri: asset.uri,
+              name: asset.name ?? `audio-${Date.now()}.mp3`,
+              type: asset.mimeType ?? "audio/mpeg",
+            } as unknown as Blob);
+
+            await api.upload<Asset>("/api/upload", formData);
+            uploadedCount++;
+          } catch {
+            // Continue with remaining files
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ["assets"] });
+        showToast(
+          `${uploadedCount} audio file${uploadedCount !== 1 ? "s" : ""} uploaded`
+        );
       }
     } catch {
       showToast("Failed to pick audio file");
     } finally {
       setIsPickerLoading(false);
     }
-  };
+  }, [showToast, queryClient]);
 
-  const handlePlay = async (clip: AudioClip) => {
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-      });
-
-      // If same clip is playing, pause it
-      if (playback.clipId === clip.id && playback.isPlaying) {
-        await playback.sound?.pauseAsync();
-        setPlayback((prev) => ({ ...prev, isPlaying: false }));
-        return;
-      }
-
-      // If same clip is paused, resume
-      if (playback.clipId === clip.id && !playback.isPlaying && playback.sound) {
-        await playback.sound.playAsync();
-        setPlayback((prev) => ({ ...prev, isPlaying: true }));
-        return;
-      }
-
-      // Stop existing playback
-      if (playback.sound) {
-        await playback.sound.stopAsync();
-        await playback.sound.unloadAsync();
-      }
-
-      const { sound, status } = await Audio.Sound.createAsync(
-        { uri: clip.uri },
-        { shouldPlay: true },
-        (s) => {
-          if (s.isLoaded && s.didJustFinish) {
-            setPlayback({ clipId: null, isPlaying: false, sound: null });
-          }
-        }
-      );
-
-      // Update clip duration if available
-      if (status.isLoaded && status.durationMillis) {
-        setClips((prev) =>
-          prev.map((c) =>
-            c.id === clip.id ? { ...c, duration: status.durationMillis ?? undefined } : c
-          )
-        );
-      }
-
-      setPlayback({ clipId: clip.id, isPlaying: true, sound });
-    } catch {
-      showToast("Failed to play audio");
+  // Text-to-speech generation
+  const handleTTS = useCallback(async () => {
+    if (!ttsText.trim()) {
+      showToast("Enter text to convert to speech");
+      return;
     }
-  };
+    setIsTtsLoading(true);
+    try {
+      const result = await api.post<{ url: string }>("/api/ai/audio/speech", {
+        input: ttsText.trim(),
+        voice: "alloy",
+      });
+      if (result?.url) {
+        showToast("Speech generated!");
+        setTtsText("");
+        queryClient.invalidateQueries({ queryKey: ["assets"] });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "TTS generation failed";
+      showToast(msg);
+    } finally {
+      setIsTtsLoading(false);
+    }
+  }, [ttsText, showToast, queryClient]);
 
-  const handleStop = async () => {
+  // Playback controls
+  const handlePlay = useCallback(
+    async (asset: Asset) => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+        });
+
+        // Toggle pause/play
+        if (playback.assetId === asset.id && playback.isPlaying) {
+          await playback.sound?.pauseAsync();
+          setPlayback((prev) => ({ ...prev, isPlaying: false }));
+          return;
+        }
+
+        if (
+          playback.assetId === asset.id &&
+          !playback.isPlaying &&
+          playback.sound
+        ) {
+          await playback.sound.playAsync();
+          setPlayback((prev) => ({ ...prev, isPlaying: true }));
+          return;
+        }
+
+        // Stop existing
+        if (playback.sound) {
+          await playback.sound.stopAsync();
+          await playback.sound.unloadAsync();
+        }
+
+        const { sound, status } = await Audio.Sound.createAsync(
+          { uri: asset.url },
+          { shouldPlay: true },
+          (s) => {
+            if (s.isLoaded && s.didJustFinish) {
+              setPlayback({
+                assetId: null,
+                isPlaying: false,
+                sound: null,
+              });
+            }
+          }
+        );
+
+        const dur =
+          status.isLoaded && status.durationMillis
+            ? status.durationMillis
+            : undefined;
+        setPlayback({
+          assetId: asset.id,
+          isPlaying: true,
+          sound,
+          duration: dur,
+        });
+      } catch {
+        showToast("Failed to play audio");
+      }
+    },
+    [playback, showToast]
+  );
+
+  const handleStop = useCallback(async () => {
     if (playback.sound) {
       await playback.sound.stopAsync();
       await playback.sound.unloadAsync();
     }
-    setPlayback({ clipId: null, isPlaying: false, sound: null });
-  };
+    setPlayback({ assetId: null, isPlaying: false, sound: null });
+  }, [playback.sound]);
 
-  const handleDelete = async (id: string) => {
-    if (playback.clipId === id) {
-      await handleStop();
-    }
-    setClips((prev) => prev.filter((c) => c.id !== id));
-    showToast("Audio removed");
-  };
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (playback.assetId === id) {
+        await handleStop();
+      }
+      deleteAsset(id);
+    },
+    [playback.assetId, handleStop, deleteAsset]
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
       {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: 16,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 4,
+          }}
+        >
           <View
             style={{
               width: 32,
@@ -178,8 +276,16 @@ export default function AudioTab() {
             >
               AUDIO
             </Text>
-            <Text style={{ color: C.dim, fontSize: 11, fontFamily: "monospace", letterSpacing: 1 }}>
-              {clips.length} clip{clips.length !== 1 ? "s" : ""} loaded
+            <Text
+              style={{
+                color: C.dim,
+                fontSize: 11,
+                fontFamily: "monospace",
+                letterSpacing: 1,
+              }}
+            >
+              {audioAssets.length} clip
+              {audioAssets.length !== 1 ? "s" : ""} stored
             </Text>
           </View>
         </View>
@@ -196,17 +302,25 @@ export default function AudioTab() {
         />
       </View>
 
-      {/* Upload Button */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+      {/* Upload + TTS Buttons */}
+      <View
+        style={{
+          flexDirection: "row",
+          paddingHorizontal: 20,
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
         <Pressable
           onPress={handlePickAudio}
           disabled={isPickerLoading}
           style={({ pressed }) => ({
+            flex: 1,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            gap: 10,
-            paddingVertical: 13,
+            gap: 8,
+            paddingVertical: 12,
             borderRadius: 10,
             backgroundColor: pressed ? C.cy + "30" : C.cy + "18",
             borderWidth: 1,
@@ -217,24 +331,89 @@ export default function AudioTab() {
           {isPickerLoading ? (
             <ActivityIndicator size="small" color={C.cy} />
           ) : (
-            <Upload size={16} color={C.cy} />
+            <Upload size={15} color={C.cy} />
           )}
           <Text
             style={{
               color: C.cy,
-              fontSize: 13,
+              fontSize: 12,
               fontFamily: "monospace",
               fontWeight: "700",
-              letterSpacing: 2,
+              letterSpacing: 1,
             }}
           >
-            UPLOAD AUDIO
+            UPLOAD
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={handleTTS}
+          disabled={isTtsLoading}
+          style={({ pressed }) => ({
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            paddingVertical: 12,
+            borderRadius: 10,
+            backgroundColor: pressed ? C.mg + "30" : C.mg + "18",
+            borderWidth: 1,
+            borderColor: C.mg + "60",
+            opacity: isTtsLoading ? 0.5 : 1,
+          })}
+        >
+          {isTtsLoading ? (
+            <ActivityIndicator size="small" color={C.mg} />
+          ) : (
+            <Mic size={15} color={C.mg} />
+          )}
+          <Text
+            style={{
+              color: C.mg,
+              fontSize: 12,
+              fontFamily: "monospace",
+              fontWeight: "700",
+              letterSpacing: 1,
+            }}
+          >
+            TTS
           </Text>
         </Pressable>
       </View>
 
+      {/* TTS Prompt */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+        <TextInput
+          value={ttsText}
+          onChangeText={setTtsText}
+          placeholder="Text to convert to speech..."
+          placeholderTextColor={C.dim}
+          multiline
+          style={{
+            backgroundColor: C.s1,
+            borderWidth: 1,
+            borderColor: C.b1,
+            borderRadius: 10,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            color: C.text,
+            fontSize: 12,
+            fontFamily: "monospace",
+            minHeight: 48,
+            maxHeight: 80,
+          }}
+        />
+      </View>
+
       {/* Content */}
-      {clips.length === 0 ? (
+      {isLoading ? (
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
+          <ActivityIndicator size="large" color={C.cy} />
+        </View>
+      ) : audioAssets.length === 0 ? (
         <View
           style={{
             flex: 1,
@@ -281,7 +460,7 @@ export default function AudioTab() {
               lineHeight: 20,
             }}
           >
-            Upload MP3, WAV, M4A, or other audio files to use in your app
+            Upload audio files or generate speech with AI
           </Text>
 
           <Box accentColor={C.cy} className="mt-6 w-full">
@@ -293,13 +472,17 @@ export default function AudioTab() {
                 lineHeight: 18,
               }}
             >
-              Supports MP3, WAV, M4A, AAC, OGG and other common audio formats.
+              Supports MP3, WAV, M4A, AAC, OGG. Enter text above and tap TTS
+              to generate speech.
             </Text>
           </Box>
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 40,
+          }}
         >
           <Text
             style={{
@@ -314,13 +497,13 @@ export default function AudioTab() {
             Audio Library
           </Text>
 
-          {clips.map((clip) => {
-            const isActive = playback.clipId === clip.id;
+          {audioAssets.map((asset) => {
+            const isActive = playback.assetId === asset.id;
             const isPlaying = isActive && playback.isPlaying;
 
             return (
               <View
-                key={clip.id}
+                key={asset.id}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -335,7 +518,7 @@ export default function AudioTab() {
               >
                 {/* Play/Pause button */}
                 <Pressable
-                  onPress={() => handlePlay(clip)}
+                  onPress={() => handlePlay(asset)}
                   style={({ pressed }) => ({
                     width: 40,
                     height: 40,
@@ -343,8 +526,8 @@ export default function AudioTab() {
                     backgroundColor: pressed
                       ? C.cy + "50"
                       : isActive
-                      ? C.cy + "30"
-                      : C.b2,
+                        ? C.cy + "30"
+                        : C.b2,
                     alignItems: "center",
                     justifyContent: "center",
                     borderWidth: 1,
@@ -370,7 +553,7 @@ export default function AudioTab() {
                     }}
                     numberOfLines={1}
                   >
-                    {clip.name}
+                    {asset.filename}
                   </Text>
                   <Text
                     style={{
@@ -379,7 +562,9 @@ export default function AudioTab() {
                       fontFamily: "monospace",
                     }}
                   >
-                    {formatDuration(clip.duration)}
+                    {isActive
+                      ? formatDuration(playback.duration)
+                      : formatSize(asset.sizeBytes)}
                   </Text>
                 </View>
 
@@ -402,7 +587,7 @@ export default function AudioTab() {
 
                 {/* Delete */}
                 <Pressable
-                  onPress={() => handleDelete(clip.id)}
+                  onPress={() => handleDelete(asset.id)}
                   style={({ pressed }) => ({
                     width: 32,
                     height: 32,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,35 +8,74 @@ import {
   FlatList,
   Dimensions,
   ActivityIndicator,
+  TextInput,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { ImageIcon, Upload, Sparkles, X, Grid2x2 } from "lucide-react-native";
+import {
+  ImageIcon,
+  Upload,
+  Sparkles,
+  X,
+  Grid2x2,
+  Download,
+  ZoomIn,
+} from "lucide-react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { C } from "@/theme/colors";
 import { useToastStore } from "@/lib/state/toast-store";
-import { Button } from "@/components/ui/Button";
 import { Box } from "@/components/ui/Box";
+import { api } from "@/lib/api/api";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const NUM_COLS = 3;
 const CELL_SIZE = (SCREEN_WIDTH - 40 - (NUM_COLS - 1) * 6) / NUM_COLS;
 
-interface UploadedImage {
+interface Asset {
   id: string;
-  uri: string;
-  name: string;
-  addedAt: Date;
+  fileId: string;
+  url: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: string;
 }
 
 export default function ImageTab() {
-  const [images, setImages] = useState<UploadedImage[]>([]);
   const [isPickerLoading, setIsPickerLoading] = useState(false);
+  const [generatePrompt, setGeneratePrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const showToast = useToastStore((s) => s.show);
+  const queryClient = useQueryClient();
 
-  const handlePickImage = async () => {
+  // Fetch assets from backend
+  const { data: assets, isLoading } = useQuery({
+    queryKey: ["assets"],
+    queryFn: () => api.get<Asset[]>("/api/files"),
+  });
+
+  const imageAssets = (assets ?? []).filter((a) =>
+    a.contentType.startsWith("image/")
+  );
+
+  // Delete asset
+  const { mutate: deleteAsset } = useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/api/files/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      showToast("Image deleted");
+    },
+    onError: () => showToast("Failed to delete image"),
+  });
+
+  // Upload images to backend
+  const handlePickImage = useCallback(async () => {
     setIsPickerLoading(true);
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
         showToast("Permission to access photos is required");
         return;
@@ -50,36 +89,82 @@ export default function ImageTab() {
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        const newImages: UploadedImage[] = result.assets.map((asset) => ({
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          uri: asset.uri,
-          name: asset.fileName ?? `image-${Date.now()}.jpg`,
-          addedAt: new Date(),
-        }));
-        setImages((prev) => [...newImages, ...prev]);
-        showToast(`${newImages.length} image${newImages.length > 1 ? "s" : ""} added`);
+        let uploadedCount = 0;
+        for (const asset of result.assets) {
+          try {
+            const formData = new FormData();
+            formData.append("file", {
+              uri: asset.uri,
+              name: asset.fileName ?? `image-${Date.now()}.jpg`,
+              type: asset.mimeType ?? "image/jpeg",
+            } as unknown as Blob);
+
+            await api.upload<Asset>("/api/upload", formData);
+            uploadedCount++;
+          } catch {
+            // Continue with other images
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ["assets"] });
+        showToast(
+          `${uploadedCount} image${uploadedCount !== 1 ? "s" : ""} uploaded`
+        );
       }
     } catch {
       showToast("Failed to pick image");
     } finally {
       setIsPickerLoading(false);
     }
-  };
+  }, [showToast, queryClient]);
 
-  const handleRemoveImage = (id: string) => {
-    setImages((prev) => prev.filter((img) => img.id !== id));
-    showToast("Image removed");
-  };
-
-  const handleGenerateImage = () => {
-    showToast("AI image generation coming soon");
-  };
+  // AI image generation
+  const handleGenerateImage = useCallback(async () => {
+    if (!generatePrompt.trim()) {
+      showToast("Enter a prompt to generate an image");
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const result = await api.post<{ url: string }>(
+        "/api/ai/image/generate",
+        {
+          prompt: generatePrompt.trim(),
+          size: "1024x1024",
+        }
+      );
+      if (result?.url) {
+        setPreviewUrl(result.url);
+        setGeneratePrompt("");
+        showToast("Image generated!");
+        // Re-fetch assets in case it was stored
+        queryClient.invalidateQueries({ queryKey: ["assets"] });
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Image generation failed";
+      showToast(msg);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [generatePrompt, showToast, queryClient]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
       {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: 16,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 4,
+          }}
+        >
           <View
             style={{
               width: 32,
@@ -105,8 +190,16 @@ export default function ImageTab() {
             >
               IMAGES
             </Text>
-            <Text style={{ color: C.dim, fontSize: 11, fontFamily: "monospace", letterSpacing: 1 }}>
-              {images.length} asset{images.length !== 1 ? "s" : ""} stored
+            <Text
+              style={{
+                color: C.dim,
+                fontSize: 11,
+                fontFamily: "monospace",
+                letterSpacing: 1,
+              }}
+            >
+              {imageAssets.length} asset
+              {imageAssets.length !== 1 ? "s" : ""} stored
             </Text>
           </View>
         </View>
@@ -129,7 +222,7 @@ export default function ImageTab() {
           flexDirection: "row",
           paddingHorizontal: 20,
           gap: 10,
-          marginBottom: 16,
+          marginBottom: 12,
         }}
       >
         <Pressable
@@ -169,6 +262,7 @@ export default function ImageTab() {
 
         <Pressable
           onPress={handleGenerateImage}
+          disabled={isGenerating}
           style={({ pressed }) => ({
             flex: 1,
             flexDirection: "row",
@@ -180,9 +274,14 @@ export default function ImageTab() {
             backgroundColor: pressed ? C.mg + "30" : C.mg + "18",
             borderWidth: 1,
             borderColor: C.mg + "60",
+            opacity: isGenerating ? 0.5 : 1,
           })}
         >
-          <Sparkles size={15} color={C.mg} />
+          {isGenerating ? (
+            <ActivityIndicator size="small" color={C.mg} />
+          ) : (
+            <Sparkles size={15} color={C.mg} />
+          )}
           <Text
             style={{
               color: C.mg,
@@ -197,10 +296,39 @@ export default function ImageTab() {
         </Pressable>
       </View>
 
+      {/* AI Prompt Input */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+        <TextInput
+          value={generatePrompt}
+          onChangeText={setGeneratePrompt}
+          placeholder="Describe the image you want to create..."
+          placeholderTextColor={C.dim}
+          multiline
+          style={{
+            backgroundColor: C.s1,
+            borderWidth: 1,
+            borderColor: C.b1,
+            borderRadius: 10,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            color: C.text,
+            fontSize: 12,
+            fontFamily: "monospace",
+            minHeight: 48,
+            maxHeight: 80,
+          }}
+        />
+      </View>
+
       {/* Content */}
-      {images.length === 0 ? (
+      {isLoading ? (
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
+          <ActivityIndicator size="large" color={C.mg} />
+        </View>
+      ) : imageAssets.length === 0 ? (
         <ScrollView contentContainerStyle={{ flex: 1 }}>
-          {/* Empty State */}
           <View
             style={{
               flex: 1,
@@ -259,17 +387,21 @@ export default function ImageTab() {
                   lineHeight: 18,
                 }}
               >
-                Tip: Tap GENERATE to create AI images, or UPLOAD to add images from your photo library.
+                Tip: Enter a description above and tap GENERATE to create AI
+                images, or UPLOAD to add images from your photo library.
               </Text>
             </Box>
           </View>
         </ScrollView>
       ) : (
         <FlatList
-          data={images}
+          data={imageAssets}
           numColumns={NUM_COLS}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 40,
+          }}
           columnWrapperStyle={{ gap: 6, marginBottom: 6 }}
           renderItem={({ item }) => (
             <View
@@ -283,13 +415,18 @@ export default function ImageTab() {
                 borderColor: C.b1,
               }}
             >
-              <Image
-                source={{ uri: item.uri }}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode="cover"
-              />
               <Pressable
-                onPress={() => handleRemoveImage(item.id)}
+                onPress={() => setPreviewUrl(item.url)}
+                style={{ flex: 1 }}
+              >
+                <Image
+                  source={{ uri: item.url }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="cover"
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => deleteAsset(item.id)}
                 style={({ pressed }) => ({
                   position: "absolute",
                   top: 4,
@@ -324,6 +461,52 @@ export default function ImageTab() {
           }
         />
       )}
+
+      {/* Image Preview Modal */}
+      <Modal
+        visible={previewUrl !== null}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setPreviewUrl(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.95)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Pressable
+            onPress={() => setPreviewUrl(null)}
+            style={{
+              position: "absolute",
+              top: 60,
+              right: 20,
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: C.s2,
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10,
+            }}
+          >
+            <X size={18} color={C.text} />
+          </Pressable>
+          {previewUrl ? (
+            <Image
+              source={{ uri: previewUrl }}
+              style={{
+                width: SCREEN_WIDTH - 40,
+                height: SCREEN_WIDTH - 40,
+                borderRadius: 12,
+              }}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

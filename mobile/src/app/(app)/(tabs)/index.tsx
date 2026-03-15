@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Zap, Plus, Trash2, ChevronRight, Upload } from "lucide-react-native";
+import { Zap, Plus, Trash2, ChevronRight, Upload, Search, X } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { api } from "@/lib/api/api";
 import { C } from "@/theme/colors";
@@ -119,6 +120,7 @@ export default function ProjectsScreen() {
   const [zipProjectName, setZipProjectName] = useState("");
   const [zipTargetProject, setZipTargetProject] = useState<Project | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -134,6 +136,17 @@ export default function ProjectsScreen() {
     queryKey: ["projects"],
     queryFn: () => api.get<Project[]>("/api/projects"),
   });
+
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    if (!searchQuery.trim()) return projects;
+    const q = searchQuery.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.bundleId.toLowerCase().includes(q)
+    );
+  }, [projects, searchQuery]);
 
   const { mutate: createProject, isPending: isCreating } = useMutation({
     mutationFn: (name: string) =>
@@ -366,6 +379,42 @@ export default function ProjectsScreen() {
         />
       </View>
 
+      {/* Search bar */}
+      <View className="px-5 pb-3">
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: C.s1,
+            borderWidth: 1,
+            borderColor: C.b1,
+            borderRadius: 10,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Search size={14} color={C.dim} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search projects..."
+            placeholderTextColor={C.dim}
+            style={{
+              flex: 1,
+              color: C.text,
+              fontSize: 13,
+              fontFamily: "monospace",
+              paddingVertical: 10,
+              paddingHorizontal: 8,
+            }}
+          />
+          {searchQuery.length > 0 ? (
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+              <X size={14} color={C.dim} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+
       {/* Action bar */}
       <View className="px-5 pb-3 flex-row" style={{ gap: 10 }}>
         <View className="flex-1">
@@ -402,7 +451,7 @@ export default function ProjectsScreen() {
         </View>
       ) : (
         <FlatList
-          data={projects ?? []}
+          data={filteredProjects}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
