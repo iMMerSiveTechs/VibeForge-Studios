@@ -106,8 +106,10 @@ export default function ProjectDetailScreen() {
 
   // Update notes mutation
   const { mutate: updateNotes } = useMutation({
-    mutationFn: (newNotes: string) =>
-      api.put<Project>(`/api/projects/${id}`, { notes: newNotes }),
+    mutationFn: (newNotes: string) => {
+      if (!id) throw new Error("No project ID");
+      return api.put<Project>(`/api/projects/${id}`, { notes: newNotes });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       showToast("Notes saved");
@@ -119,7 +121,10 @@ export default function ProjectDetailScreen() {
 
   // Delete mutation
   const { mutate: deleteProject, isPending: isDeleting } = useMutation({
-    mutationFn: () => api.delete<void>(`/api/projects/${id}`),
+    mutationFn: () => {
+      if (!id) throw new Error("No project ID");
+      return api.delete<void>(`/api/projects/${id}`);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       showToast("Project deleted");

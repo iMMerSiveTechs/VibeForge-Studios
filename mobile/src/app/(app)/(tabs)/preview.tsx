@@ -8,6 +8,7 @@ import {
   Pressable,
   Dimensions,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -69,25 +70,20 @@ function deepSet(
   path: string,
   value: unknown
 ): Record<string, unknown> {
-  const copy = { ...obj };
   const keys = path.split(".");
-  let current: Record<string, unknown> = copy;
-  for (let i = 0; i < keys.length - 1; i++) {
-    const k = keys[i];
-    if (current[k] && typeof current[k] === "object") {
-      if (Array.isArray(current[k])) {
-        current[k] = [...(current[k] as unknown[])];
-      } else {
-        current[k] = { ...(current[k] as Record<string, unknown>) };
-      }
-    } else {
-      current[k] = {};
-    }
-    current = current[k] as Record<string, unknown>;
+  if (keys.length === 1) {
+    return { ...obj, [keys[0]]: value };
   }
-  const lastKey = keys[keys.length - 1];
-  current[lastKey] = value;
-  return copy;
+  const [head, ...rest] = keys;
+  const child = obj[head] && typeof obj[head] === "object"
+    ? (Array.isArray(obj[head])
+        ? [...(obj[head] as unknown[])]
+        : { ...(obj[head] as Record<string, unknown>) })
+    : {};
+  return {
+    ...obj,
+    [head]: deepSet(child as Record<string, unknown>, rest.join("."), value),
+  };
 }
 
 function deepGet(
@@ -391,7 +387,7 @@ export default function PreviewScreen() {
   const setActiveProjectId = useProjectStore((s) => s.setActiveProjectId);
   const showToast = useToastStore((s) => s.show);
 
-  const { data: project, error: projectError } = useQuery({
+  const { data: project, error: projectError, isLoading: isProjectLoading } = useQuery({
     queryKey: ["project", activeProjectId],
     queryFn: () => api.get<Project>(`/api/projects/${activeProjectId}`),
     enabled: !!activeProjectId,
@@ -935,6 +931,20 @@ export default function PreviewScreen() {
   // ---------------------------------------------------------------------------
   // Empty states
   // ---------------------------------------------------------------------------
+  if (isProjectLoading && activeProjectId) {
+    return (
+      <SafeAreaView className="flex-1 bg-vf-bg items-center justify-center" edges={["top"]}>
+        <ActivityIndicator size="large" color={C.cy} />
+        <Text
+          className="text-vf-dim text-xs mt-3"
+          style={{ fontFamily: "monospace" }}
+        >
+          Loading project...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   if (!activeProjectId) {
     return (
       <SafeAreaView className="flex-1 bg-vf-bg" edges={["top"]}>

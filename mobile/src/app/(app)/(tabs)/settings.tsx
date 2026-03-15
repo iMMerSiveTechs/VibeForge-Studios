@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -11,6 +11,7 @@ import { useToastStore } from "@/lib/state/toast-store";
 import { Button } from "@/components/ui/Button";
 import { Box } from "@/components/ui/Box";
 import { Input } from "@/components/ui/Input";
+import { Dialog } from "@/components/ui/Dialog";
 
 interface SettingsMap {
   [key: string]: string;
@@ -37,6 +38,8 @@ const DEFAULT_SETTINGS: SettingsMap = {
 export default function SettingsScreen() {
   const [form, setForm] = useState<SettingsMap>({ ...DEFAULT_SETTINGS });
   const [isDirty, setIsDirty] = useState(false);
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,41 +111,21 @@ export default function SettingsScreen() {
     saveSettings(form);
   };
 
-  const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await authClient.signOut();
-          router.replace("/");
-        },
-      },
-    ]);
+  const handleSignOut = async () => {
+    setShowSignOutDialog(false);
+    await authClient.signOut();
+    router.replace("/");
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      "Delete Account & Data",
-      "This will permanently delete your account and all associated data, including API keys and settings. This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete Account",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.delete("/api/me");
-              await authClient.signOut();
-              router.replace("/");
-            } catch {
-              showToast("Failed to delete account. Please try again.");
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteAccount = async () => {
+    setShowDeleteDialog(false);
+    try {
+      await api.delete("/api/me");
+      await authClient.signOut();
+      router.replace("/");
+    } catch {
+      showToast("Failed to delete account. Please try again.");
+    }
   };
 
   if (isLoading) {
@@ -386,17 +369,77 @@ export default function SettingsScreen() {
           <View className="mb-3">
             <Button
               label="SIGN OUT"
-              onPress={handleSignOut}
+              onPress={() => setShowSignOutDialog(true)}
               variant="ghost"
             />
           </View>
           <Button
             label="DELETE ACCOUNT & DATA"
-            onPress={handleDeleteAccount}
+            onPress={() => setShowDeleteDialog(true)}
             variant="danger"
           />
         </View>
       </ScrollView>
+
+      {/* Sign Out Dialog */}
+      <Dialog
+        open={showSignOutDialog}
+        onClose={() => setShowSignOutDialog(false)}
+        title="Sign Out"
+      >
+        <Text
+          className="text-vf-text text-sm mb-4"
+          style={{ fontFamily: "monospace" }}
+        >
+          Are you sure you want to sign out?
+        </Text>
+        <View className="flex-row space-x-3">
+          <View className="flex-1">
+            <Button
+              label="Cancel"
+              onPress={() => setShowSignOutDialog(false)}
+              variant="ghost"
+            />
+          </View>
+          <View className="flex-1">
+            <Button
+              label="Sign Out"
+              onPress={handleSignOut}
+              variant="danger"
+            />
+          </View>
+        </View>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        title="Delete Account & Data"
+      >
+        <Text
+          className="text-vf-text text-sm mb-4"
+          style={{ fontFamily: "monospace" }}
+        >
+          This will permanently delete your account and all associated data, including API keys and settings. This action cannot be undone.
+        </Text>
+        <View className="flex-row space-x-3">
+          <View className="flex-1">
+            <Button
+              label="Cancel"
+              onPress={() => setShowDeleteDialog(false)}
+              variant="ghost"
+            />
+          </View>
+          <View className="flex-1">
+            <Button
+              label="Delete"
+              onPress={handleDeleteAccount}
+              variant="danger"
+            />
+          </View>
+        </View>
+      </Dialog>
     </SafeAreaView>
   );
 }

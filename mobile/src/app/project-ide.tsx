@@ -77,11 +77,13 @@ export default function ProjectIDEScreen() {
 
   // Save file mutation
   const { mutate: saveFile, isPending: isSaving } = useMutation({
-    mutationFn: (params: { path: string; content: string }) =>
-      api.put<{ path: string; content: string }>(
+    mutationFn: (params: { path: string; content: string }) => {
+      if (!id) throw new Error("No project ID");
+      return api.put<{ path: string; content: string }>(
         `/api/projects/${id}/file`,
         params
-      ),
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       showToast("File saved");
@@ -93,11 +95,13 @@ export default function ProjectIDEScreen() {
 
   // Create file mutation
   const { mutate: createFile, isPending: isCreating } = useMutation({
-    mutationFn: (params: { path: string; content: string }) =>
-      api.put<{ path: string; content: string }>(
+    mutationFn: (params: { path: string; content: string }) => {
+      if (!id) throw new Error("No project ID");
+      return api.put<{ path: string; content: string }>(
         `/api/projects/${id}/file`,
         params
-      ),
+      );
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       setSelectedPath(variables.path);
@@ -112,11 +116,13 @@ export default function ProjectIDEScreen() {
 
   // Rename mutation
   const { mutate: renameFile, isPending: isRenaming } = useMutation({
-    mutationFn: (params: { oldPath: string; newPath: string }) =>
-      api.post<{ renamed: number }>(
+    mutationFn: (params: { oldPath: string; newPath: string }) => {
+      if (!id) throw new Error("No project ID");
+      return api.post<{ renamed: number }>(
         `/api/projects/${id}/file/rename`,
         params
-      ),
+      );
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       if (selectedPath === variables.oldPath) {
@@ -133,10 +139,12 @@ export default function ProjectIDEScreen() {
 
   // Delete mutation
   const { mutate: deleteFile, isPending: isDeleting } = useMutation({
-    mutationFn: (path: string) =>
-      api.delete<{ deleted: number }>(
+    mutationFn: (path: string) => {
+      if (!id) throw new Error("No project ID");
+      return api.delete<{ deleted: number }>(
         `/api/projects/${id}/file?path=${encodeURIComponent(path)}`
-      ),
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       if (selectedPath === deleteTarget) {

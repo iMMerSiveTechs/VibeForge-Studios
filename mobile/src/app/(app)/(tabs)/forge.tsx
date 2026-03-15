@@ -196,6 +196,7 @@ export default function ForgeScreen() {
   const turnIdRef = useRef<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const lineIdCounter = useRef<number>(0);
+  const isStreamingRef = useRef<boolean>(false);
 
   // Engine store (for external consumers)
   useEngineStore((s) => s.phase);
@@ -252,13 +253,14 @@ export default function ForgeScreen() {
     const text = inputText.trim();
     if (!text) return;
 
-    // Interrupt any running stream first
-    if (isStreaming && turnIdRef.current) {
+    // Interrupt any running stream first (use ref to avoid stale closure)
+    if (isStreamingRef.current && turnIdRef.current) {
       await engineClient.interrupt(turnIdRef.current);
     }
 
     setInputText("");
     setIsStreaming(true);
+    isStreamingRef.current = true;
     setRouteInfo(null);
     setFinalMetrics(null);
     setLines([]);
@@ -286,8 +288,10 @@ export default function ForgeScreen() {
         } else if (p === "interrupted") {
           addLine({ isSystem: true, text: "// Interrupted." });
           setIsStreaming(false);
+          isStreamingRef.current = false;
         } else if (p === "done") {
           setIsStreaming(false);
+          isStreamingRef.current = false;
         }
       },
       onDelta: (delta: EngineDelta) => {
@@ -301,21 +305,24 @@ export default function ForgeScreen() {
           text: `// Done · $${result.metrics.estimatedCostUSD.toFixed(4)} · ${result.metrics.durationMs}ms · AI-generated output — verify before use.`,
         });
         setIsStreaming(false);
+        isStreamingRef.current = false;
       },
       onError: (error: EngineError) => {
         addLine({ isError: true, text: `// Error: ${error.message}` });
         setIsStreaming(false);
+        isStreamingRef.current = false;
       },
     };
 
     await engineClient.generate(text, callbacks, options);
-  }, [inputText, isStreaming, preset, overrides, addLine, appendToDelta]);
+  }, [inputText, preset, overrides, addLine, appendToDelta]);
 
   const handleStop = useCallback(async () => {
     if (turnIdRef.current) {
       await engineClient.interrupt(turnIdRef.current);
     }
     setIsStreaming(false);
+    isStreamingRef.current = false;
   }, []);
 
   const handleModelSelect = useCallback((roleKey: string, modelId: string | null) => {
