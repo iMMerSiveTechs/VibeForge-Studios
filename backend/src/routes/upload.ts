@@ -89,6 +89,8 @@ uploadRouter.post("/:id/upload-zip", async (c) => {
       if (zipEntry.dir) return;
       if (relativePath.startsWith("__MACOSX/")) return;
       if (relativePath.startsWith(".")) return;
+      // Path traversal protection
+      if (relativePath.includes("..") || relativePath.startsWith("/")) return;
 
       filePromises.push(
         zipEntry

@@ -1,13 +1,19 @@
+import { auth } from "../auth";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { db } from "../prisma";
 
-const feedbackRouter = new Hono();
+const feedbackRouter = new Hono<{
+  Variables: {
+    user: typeof auth.$Infer.Session.user | null;
+    session: typeof auth.$Infer.Session.session | null;
+  };
+}>();
 
 // GET / - list user's feedback
 feedbackRouter.get("/", async (c) => {
-  const user = c.get("user") as { id: string } | null;
+  const user = c.get("user");
   if (!user) {
     return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
   }
@@ -33,7 +39,7 @@ feedbackRouter.post(
     })
   ),
   async (c) => {
-    const user = c.get("user") as { id: string } | null;
+    const user = c.get("user");
     if (!user) {
       return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
     }
@@ -55,7 +61,7 @@ feedbackRouter.post(
 
 // DELETE /:id - delete feedback
 feedbackRouter.delete("/:id", async (c) => {
-  const user = c.get("user") as { id: string } | null;
+  const user = c.get("user");
   if (!user) {
     return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
   }

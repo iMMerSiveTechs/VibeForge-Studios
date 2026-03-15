@@ -46,7 +46,12 @@ interface RawDeltaEvent {
 interface RawFinalEvent {
   turnId: string;
   finalText: string;
-  artifacts: Array<{ id: string; kind: string; path: string; content: string }>;
+  artifacts: Array<{
+    id: string;
+    kind: string;
+    path: string;
+    content: string;
+  }>;
   roles: string[];
   mode: string;
   intent: string;
@@ -66,8 +71,23 @@ interface RawErrorEvent {
 
 export class RemoteEngine implements EngineAdapter {
   private readerRef: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private isGenerating = false;
 
-  async generate(message: string, callbacks: EngineCallbacks, options?: EngineOptions): Promise<void> {
+  async generate(
+    message: string,
+    callbacks: EngineCallbacks,
+    options?: EngineOptions
+  ): Promise<void> {
+    // Guard against concurrent requests
+    if (this.isGenerating) {
+      callbacks.onError({
+        message: "A request is already in progress. Please wait or interrupt first.",
+      });
+      return;
+    }
+
+    this.isGenerating = true;
+
     try {
       const response = await expoFetch(`${BACKEND_URL}/api/vce/chat`, {
         method: "POST",
@@ -84,11 +104,9 @@ export class RemoteEngine implements EngineAdapter {
       });
 
       if (!response.ok) {
-        const errJson = (await response
-          .json()
-          .catch(() => ({
-            error: { message: "Unknown error" },
-          }))) as { error: { message: string } };
+        const errJson = (await response.json().catch(() => ({
+          error: { message: "Unknown error" },
+        }))) as { error: { message: string } };
         throw new Error(
           errJson?.error?.message ?? `HTTP ${response.status}`
         );
@@ -104,9 +122,16 @@ export class RemoteEngine implements EngineAdapter {
       const processEvents = (chunk: string) => {
         buffer += chunk;
         const blocks = buffer.split("\n\n");
-        buffer = blocks.pop() ?? "";
+        // Only keep the last block as buffer if the chunk didn't end with \n\n
+        // (meaning it's an incomplete event)
+        if (chunk.endsWith("\n\n")) {
+          buffer = "";
+        } else {
+          buffer = blocks.pop() ?? "";
+        }
 
         for (const block of blocks) {
+          if (!block.trim()) continue;
           if (block.startsWith(": keepalive")) continue;
 
           const lines = block.split("\n");
@@ -206,21 +231,23 @@ export class RemoteEngine implements EngineAdapter {
 
       this.readerRef = null;
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Unexpected error";
+      const msg = err instanceof Error ? err.message : "Unexpected error";
       callbacks.onError({ message: msg });
+    } finally {
+      this.isGenerating = false;
     }
   }
 
   async interrupt(turnId: string): Promise<void> {
     // Cancel the active reader
-    if (this.readerRef) {
+    const reader = this.readerRef;
+    this.readerRef = null;
+    if (reader) {
       try {
-        this.readerRef.cancel();
+        reader.cancel();
       } catch {
         // ignore
       }
-      this.readerRef = null;
     }
 
     // Notify the backend

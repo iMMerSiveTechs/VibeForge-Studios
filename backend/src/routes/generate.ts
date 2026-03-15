@@ -48,11 +48,11 @@ generateRouter.post(
 
     const body = c.req.valid("json");
 
-    // Verify project exists
+    // Verify project exists and user owns it
     const project = await db.project.findUnique({
       where: { id: body.projectId },
     });
-    if (!project) {
+    if (!project || project.userId !== user.id) {
       return c.json(
         { error: { message: "Project not found", code: "NOT_FOUND" } },
         404

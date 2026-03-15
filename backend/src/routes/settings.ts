@@ -23,13 +23,22 @@ settingsRouter.use("/*", async (c, next) => {
   await next();
 });
 
+// Mask sensitive values (API keys)
+function maskSensitiveValue(key: string, value: string): string {
+  if (key.startsWith("api_key_") && value.length > 8) {
+    return value.slice(0, 4) + "..." + value.slice(-4);
+  }
+  return value;
+}
+
 // GET /api/settings - get all settings as { key: value } object for current user
+// API keys are masked in the response; use has_api_key_* to check presence
 settingsRouter.get("/", async (c) => {
   const user = c.get("user")!;
   const settings = await db.setting.findMany({ where: { userId: user.id } });
   const result: Record<string, string> = {};
   for (const s of settings) {
-    result[s.key] = s.value;
+    result[s.key] = maskSensitiveValue(s.key, s.value);
   }
   return c.json({ data: result });
 });

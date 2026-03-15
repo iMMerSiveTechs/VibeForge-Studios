@@ -11,10 +11,21 @@ const runsRouter = new Hono<{
   };
 }>();
 
-// GET /api/runs - list all runs ordered by createdAt desc, include project name
+// GET /api/runs - list runs for the authenticated user (paginated)
 runsRouter.get("/", async (c) => {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+  }
+
+  const limit = Math.min(Number(c.req.query("limit")) || 50, 200);
+  const offset = Math.max(Number(c.req.query("offset")) || 0, 0);
+
   const runs = await db.run.findMany({
+    where: { project: { userId: user.id } },
     orderBy: { createdAt: "desc" },
+    take: limit,
+    skip: offset,
     include: {
       project: {
         select: { name: true },
@@ -24,26 +35,31 @@ runsRouter.get("/", async (c) => {
   return c.json({ data: runs });
 });
 
-// GET /api/runs/:id - get single run
+// GET /api/runs/:id - get single run (user must own the project)
 runsRouter.get("/:id", async (c) => {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+  }
+
   const id = c.req.param("id");
   const run = await db.run.findUnique({
     where: { id },
     include: {
       project: {
-        select: { name: true },
+        select: { name: true, userId: true },
       },
     },
   });
 
-  if (!run) {
+  if (!run || run.project?.userId !== user.id) {
     return c.json({ error: { message: "Run not found", code: "NOT_FOUND" } }, 404);
   }
 
   return c.json({ data: run });
 });
 
-// POST /api/runs - create run
+// POST /api/runs - create run (user must own the project)
 runsRouter.post(
   "/",
   zValidator(
@@ -58,12 +74,17 @@ runsRouter.post(
     })
   ),
   async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+    }
+
     const body = c.req.valid("json");
 
     const project = await db.project.findUnique({
       where: { id: body.projectId },
     });
-    if (!project) {
+    if (!project || project.userId !== user.id) {
       return c.json(
         { error: { message: "Project not found", code: "NOT_FOUND" } },
         404
@@ -84,7 +105,7 @@ runsRouter.post(
   }
 );
 
-// PUT /api/runs/:id - update run
+// PUT /api/runs/:id - update run (user must own the project)
 runsRouter.put(
   "/:id",
   zValidator(
@@ -102,10 +123,18 @@ runsRouter.put(
     })
   ),
   async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+    }
+
     const id = c.req.param("id");
 
-    const existing = await db.run.findUnique({ where: { id } });
-    if (!existing) {
+    const existing = await db.run.findUnique({
+      where: { id },
+      include: { project: { select: { userId: true } } },
+    });
+    if (!existing || existing.project?.userId !== user.id) {
       return c.json(
         { error: { message: "Run not found", code: "NOT_FOUND" } },
         404
@@ -131,14 +160,19 @@ const projectRunsRouter = new Hono<{
   };
 }>();
 
-// GET /api/projects/:projectId/runs - get runs for specific project
+// GET /api/projects/:projectId/runs - get runs for specific project (user must own it)
 projectRunsRouter.get("/:projectId/runs", async (c) => {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+  }
+
   const projectId = c.req.param("projectId");
 
   const project = await db.project.findUnique({
     where: { id: projectId },
   });
-  if (!project) {
+  if (!project || project.userId !== user.id) {
     return c.json(
       { error: { message: "Project not found", code: "NOT_FOUND" } },
       404
@@ -148,6 +182,7 @@ projectRunsRouter.get("/:projectId/runs", async (c) => {
   const runs = await db.run.findMany({
     where: { projectId },
     orderBy: { createdAt: "desc" },
+    take: 100,
   });
   return c.json({ data: runs });
 });

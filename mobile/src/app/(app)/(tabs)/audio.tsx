@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -68,6 +68,18 @@ export default function AudioTab() {
   const [isTtsLoading, setIsTtsLoading] = useState(false);
   const showToast = useToastStore((s) => s.show);
   const queryClient = useQueryClient();
+  const soundRef = useRef<Audio.Sound | null>(null);
+
+  // Cleanup sound on unmount
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.stopAsync().catch(() => {});
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+    };
+  }, []);
 
   // Fetch audio assets from backend
   const { data: assets, isLoading } = useQuery({
@@ -190,6 +202,7 @@ export default function AudioTab() {
           { shouldPlay: true },
           (s) => {
             if (s.isLoaded && s.didJustFinish) {
+              soundRef.current = null;
               setPlayback({
                 assetId: null,
                 isPlaying: false,
@@ -199,6 +212,7 @@ export default function AudioTab() {
           }
         );
 
+        soundRef.current = sound;
         const dur =
           status.isLoaded && status.durationMillis
             ? status.durationMillis
@@ -221,6 +235,7 @@ export default function AudioTab() {
       await playback.sound.stopAsync();
       await playback.sound.unloadAsync();
     }
+    soundRef.current = null;
     setPlayback({ assetId: null, isPlaying: false, sound: null });
   }, [playback.sound]);
 
