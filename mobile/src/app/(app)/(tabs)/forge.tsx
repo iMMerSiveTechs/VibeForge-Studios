@@ -2,7 +2,7 @@
  * Forge Screen — Combined Build + Engine cockpit
  * All engine calls via EngineClient only. No provider URLs in UI.
  */
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -198,6 +198,23 @@ export default function ForgeScreen() {
   const lineIdCounter = useRef<number>(0);
   const isStreamingRef = useRef<boolean>(false);
 
+  // Mutable line buffer — flushed to state on rAF to avoid per-token re-renders
+  const linesRef = useRef<TerminalLine[]>([]);
+  const flushScheduled = useRef<boolean>(false);
+
+  const flushLines = useCallback(() => {
+    flushScheduled.current = false;
+    setLines([...linesRef.current]);
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
+  }, []);
+
+  const scheduleFlush = useCallback(() => {
+    if (!flushScheduled.current) {
+      flushScheduled.current = true;
+      requestAnimationFrame(flushLines);
+    }
+  }, [flushLines]);
+
   // Engine store (for external consumers)
   useEngineStore((s) => s.phase);
 
@@ -215,7 +232,7 @@ export default function ForgeScreen() {
 
   const models = modelsData?.models ?? [];
 
-  function getModelsForRole(): ModelOption[] {
+  const sortedModels = useMemo(() => {
     const tierForPreset: Record<string, string> = { FAST: "fast", SMART: "smart", DEEP: "max" };
     const tier = tierForPreset[preset] ?? "smart";
     return [...models].sort((a, b) => {
@@ -225,23 +242,23 @@ export default function ForgeScreen() {
       const bRec = b.recommended ? 0 : 1;
       return aMatch - bMatch || aRec - bRec;
     });
-  }
+  }, [models, preset]);
 
   const addLine = useCallback((line: Omit<TerminalLine, "id">) => {
-    setLines((prev) => [...prev, { ...line, id: `l${++lineIdCounter.current}` }]);
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
-  }, []);
+    linesRef.current = [...linesRef.current, { ...line, id: `l${++lineIdCounter.current}` }];
+    scheduleFlush();
+  }, [scheduleFlush]);
 
   const appendToDelta = useCallback((role: string, delta: string) => {
-    setLines((prev) => {
-      const last = prev[prev.length - 1];
-      if (last && last.role === role && !last.isFinal && !last.isError) {
-        return [...prev.slice(0, -1), { ...last, text: last.text + delta }];
-      }
-      return [...prev, { id: `l${++lineIdCounter.current}`, role, text: delta }];
-    });
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
-  }, []);
+    const prev = linesRef.current;
+    const last = prev[prev.length - 1];
+    if (last && last.role === role && !last.isFinal && !last.isError) {
+      linesRef.current = [...prev.slice(0, -1), { ...last, text: last.text + delta }];
+    } else {
+      linesRef.current = [...prev, { id: `l${++lineIdCounter.current}`, role, text: delta }];
+    }
+    scheduleFlush();
+  }, [scheduleFlush]);
 
   const handleToggleMode = () => {
     const next = clientMode === "mock" ? "remote" : "mock";
@@ -263,6 +280,7 @@ export default function ForgeScreen() {
     isStreamingRef.current = true;
     setRouteInfo(null);
     setFinalMetrics(null);
+    linesRef.current = [];
     setLines([]);
     setHistory((h) => [text, ...h.slice(0, 9)]);
 
@@ -335,8 +353,6 @@ export default function ForgeScreen() {
       return { ...o, [roleKey]: modelId };
     });
   }, []);
-
-  const sortedModels = getModelsForRole();
 
   const selectedProject = projects?.find((p) => p.id === selectedProjectId) ?? projects?.[0] ?? null;
 

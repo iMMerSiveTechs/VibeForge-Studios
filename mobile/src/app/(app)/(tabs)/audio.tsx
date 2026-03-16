@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -35,6 +35,8 @@ interface Asset {
   sizeBytes: number;
   createdAt: string;
 }
+
+const keyExtractorById = (item: Asset) => item.id;
 
 interface PlaybackState {
   assetId: string | null;
@@ -87,8 +89,9 @@ export default function AudioTab() {
     queryFn: () => api.get<Asset[]>("/api/files"),
   });
 
-  const audioAssets = (assets ?? []).filter((a) =>
-    a.contentType.startsWith("audio/")
+  const audioAssets = useMemo(
+    () => (assets ?? []).filter((a) => a.contentType.startsWith("audio/")),
+    [assets]
   );
 
   // Delete asset
@@ -500,11 +503,15 @@ export default function AudioTab() {
       ) : (
         <FlatList
           data={audioAssets}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractorById}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingBottom: 40,
           }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews
           ListHeaderComponent={
             <Text
               style={{

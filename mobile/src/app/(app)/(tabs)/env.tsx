@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -50,15 +50,19 @@ export default function EnvTab() {
   });
 
   // Extract env vars from settings
-  const envVars: EnvVar[] = settings
-    ? Object.entries(settings)
-        .filter(([key]) => key.startsWith(ENV_PREFIX))
-        .map(([key, value]) => ({
-          key,
-          rawKey: key.slice(ENV_PREFIX.length),
-          value,
-        }))
-    : [];
+  const envVars: EnvVar[] = useMemo(
+    () =>
+      settings
+        ? Object.entries(settings)
+            .filter(([key]) => key.startsWith(ENV_PREFIX))
+            .map(([key, value]) => ({
+              key,
+              rawKey: key.slice(ENV_PREFIX.length),
+              value,
+            }))
+        : [],
+    [settings]
+  );
 
   const pendingToastRef = React.useRef<string>("");
 

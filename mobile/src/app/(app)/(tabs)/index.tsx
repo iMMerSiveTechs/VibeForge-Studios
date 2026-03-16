@@ -48,7 +48,7 @@ function getStatusColor(status: string): string {
   }
 }
 
-function ProjectCard({
+const ProjectCard = React.memo(function ProjectCard({
   project,
   onDelete,
   onTap,
@@ -112,7 +112,7 @@ function ProjectCard({
       </View>
     </Box>
   );
-}
+});
 
 export default function ProjectsScreen() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -421,6 +421,10 @@ export default function ProjectsScreen() {
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}

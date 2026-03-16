@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -27,6 +27,8 @@ import { Box } from "@/components/ui/Box";
 import { api } from "@/lib/api/api";
 
 const NUM_COLS = 3;
+const columnWrapperStyle = { gap: 6, marginBottom: 6 };
+const keyExtractorById = (item: Asset) => item.id;
 
 interface Asset {
   id: string;
@@ -54,8 +56,9 @@ export default function ImageTab() {
     queryFn: () => api.get<Asset[]>("/api/files"),
   });
 
-  const imageAssets = (assets ?? []).filter((a) =>
-    a.contentType.startsWith("image/")
+  const imageAssets = useMemo(
+    () => (assets ?? []).filter((a) => a.contentType.startsWith("image/")),
+    [assets]
   );
 
   // Delete asset
@@ -145,6 +148,56 @@ export default function ImageTab() {
       setIsGenerating(false);
     }
   }, [generatePrompt, showToast, queryClient]);
+
+  const renderImageItem = useCallback(
+    ({ item }: { item: Asset }) => (
+      <View
+        style={{
+          width: cellSize,
+          height: cellSize,
+          borderRadius: 8,
+          overflow: "hidden",
+          backgroundColor: C.s1,
+          borderWidth: 1,
+          borderColor: C.b1,
+        }}
+      >
+        <Pressable
+          onPress={() => setPreviewUrl(item.url)}
+          accessibilityLabel={`Preview ${item.filename}`}
+          accessibilityRole="image"
+          style={{ flex: 1 }}
+        >
+          <Image
+            source={{ uri: item.url }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="cover"
+          />
+        </Pressable>
+        <Pressable
+          onPress={() => deleteAsset(item.id)}
+          accessibilityLabel="Delete image"
+          accessibilityRole="button"
+          style={({ pressed }) => ({
+            position: "absolute",
+            top: 4,
+            right: 4,
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: pressed ? C.red : C.bg + "CC",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: C.b2,
+          })}
+        >
+          <X size={12} color={C.text} />
+        </Pressable>
+      </View>
+    ),
+    [cellSize, deleteAsset]
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
@@ -400,58 +453,17 @@ export default function ImageTab() {
         <FlatList
           data={imageAssets}
           numColumns={NUM_COLS}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractorById}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingBottom: 40,
           }}
-          columnWrapperStyle={{ gap: 6, marginBottom: 6 }}
-          renderItem={({ item }) => (
-            <View
-              style={{
-                width: cellSize,
-                height: cellSize,
-                borderRadius: 8,
-                overflow: "hidden",
-                backgroundColor: C.s1,
-                borderWidth: 1,
-                borderColor: C.b1,
-              }}
-            >
-              <Pressable
-                onPress={() => setPreviewUrl(item.url)}
-                accessibilityLabel={`Preview ${item.filename}`}
-                accessibilityRole="image"
-                style={{ flex: 1 }}
-              >
-                <Image
-                  source={{ uri: item.url }}
-                  style={{ width: "100%", height: "100%" }}
-                  resizeMode="cover"
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => deleteAsset(item.id)}
-                accessibilityLabel="Delete image"
-                accessibilityRole="button"
-                style={({ pressed }) => ({
-                  position: "absolute",
-                  top: 4,
-                  right: 4,
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  backgroundColor: pressed ? C.red : C.bg + "CC",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: C.b2,
-                })}
-              >
-                <X size={12} color={C.text} />
-              </Pressable>
-            </View>
-          )}
+          columnWrapperStyle={columnWrapperStyle}
+          initialNumToRender={12}
+          maxToRenderPerBatch={9}
+          windowSize={5}
+          removeClippedSubviews
+          renderItem={renderImageItem}
           ListHeaderComponent={
             <Text
               style={{
