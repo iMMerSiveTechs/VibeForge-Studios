@@ -14,6 +14,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Zap, Square, ChevronDown, ChevronUp, Cpu, Brain, Activity } from "lucide-react-native";
 import { engineClient } from "@/engine";
@@ -192,6 +193,10 @@ export default function ForgeScreen() {
   const [clientMode, setClientMode] = useState<"mock" | "remote">("remote");
   const [showAITools, setShowAITools] = useState<boolean>(false);
   const [showActivity, setShowActivity] = useState<boolean>(false);
+  const [forgeMode, setForgeMode] = useState<"CHAT" | "CODEGEN">("CODEGEN");
+  const [lastGeneratedFiles, setLastGeneratedFiles] = useState<string[]>([]);
+
+  const router = useRouter();
 
   const turnIdRef = useRef<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
@@ -223,6 +228,8 @@ export default function ForgeScreen() {
     queryKey: ["projects"],
     queryFn: () => api.get<Project[]>("/api/projects"),
   });
+
+  const selectedProject = projects?.find((p) => p.id === selectedProjectId) ?? projects?.[0] ?? null;
 
   // Load model catalog
   const { data: modelsData } = useQuery<{ models: ModelOption[]; presetDefaults: Record<string, unknown> }>({
@@ -335,6 +342,105 @@ export default function ForgeScreen() {
     await engineClient.generate(text, callbacks, options);
   }, [inputText, preset, overrides, addLine, appendToDelta]);
 
+  const handleCodegen = useCallback(async () => {
+    const text = inputText.trim();
+    if (!text || !selectedProject) return;
+
+    setInputText("");
+    setIsStreaming(true);
+    isStreamingRef.current = true;
+    linesRef.current = [];
+    setLines([]);
+    setLastGeneratedFiles([]);
+    setHistory((h) => [text, ...h.slice(0, 9)]);
+
+    addLine({ isSystem: true, text: `> ${text}` });
+    addLine({ isSystem: true, text: `// Generating code for ${selectedProject.name}...` });
+
+    try {
+      const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+      const { fetch: expoFetch } = await import("expo/fetch");
+      const { authClient } = await import("@/lib/auth/auth-client");
+
+      const response = await expoFetch(`${baseUrl}/api/generate/${selectedProject.id}/stream`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: authClient.getCookie(),
+        },
+        body: JSON.stringify({ prompt: text, preset }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: { message: "Request failed" } }));
+        throw new Error(err?.error?.message ?? `HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split("\n\n");
+        if (buffer.endsWith("\n\n")) {
+          buffer = "";
+        } else {
+          buffer = blocks.pop() ?? "";
+        }
+
+        for (const block of blocks) {
+          if (!block.trim()) continue;
+          const sseLines = block.split("\n");
+          let eventType = "";
+          let dataStr = "";
+          for (const sseLine of sseLines) {
+            if (sseLine.startsWith("event: ")) eventType = sseLine.slice(7).trim();
+            else if (sseLine.startsWith("data: ")) dataStr = sseLine.slice(6).trim();
+          }
+          if (!eventType || !dataStr) continue;
+
+          try {
+            const data = JSON.parse(dataStr);
+            switch (eventType) {
+              case "progress":
+                addLine({ isSystem: true, text: `// ${data.message}` });
+                break;
+              case "files": {
+                const changes = data.changes ?? [];
+                setLastGeneratedFiles(changes.map((c: any) => c.path));
+                for (const change of changes) {
+                  const actionColor = change.action === "delete" ? "deleted" : change.action === "update" ? "updated" : "created";
+                  addLine({ isSystem: true, text: `  ${actionColor}: ${change.path}` });
+                }
+                addLine({ isSystem: true, text: `// ${data.created ?? 0} created, ${data.updated ?? 0} updated, ${data.deleted ?? 0} deleted` });
+                break;
+              }
+              case "done":
+                addLine({ isSystem: true, isFinal: true, text: `// Done! ${data.explanation ?? ""}` });
+                break;
+              case "error":
+                addLine({ isError: true, text: `// Error: ${data.message}` });
+                break;
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unexpected error";
+      addLine({ isError: true, text: `// Error: ${msg}` });
+    } finally {
+      setIsStreaming(false);
+      isStreamingRef.current = false;
+    }
+  }, [inputText, selectedProject, preset, addLine]);
+
   const handleStop = useCallback(async () => {
     if (turnIdRef.current) {
       await engineClient.interrupt(turnIdRef.current);
@@ -353,8 +459,6 @@ export default function ForgeScreen() {
       return { ...o, [roleKey]: modelId };
     });
   }, []);
-
-  const selectedProject = projects?.find((p) => p.id === selectedProjectId) ?? projects?.[0] ?? null;
 
   // Cost display
   const costStr = finalMetrics ? `$${finalMetrics.estimatedCostUSD.toFixed(4)}` : null;
@@ -417,6 +521,23 @@ export default function ForgeScreen() {
             );
           })}
         </ScrollView>
+
+        {/* Forge mode toggle */}
+        <TouchableOpacity
+          onPress={() => setForgeMode(m => m === "CHAT" ? "CODEGEN" : "CHAT")}
+          style={{
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 5,
+            borderWidth: 1,
+            borderColor: forgeMode === "CODEGEN" ? COLORS.magenta : COLORS.dim,
+            backgroundColor: forgeMode === "CODEGEN" ? COLORS.magenta + "18" : "transparent",
+          }}
+        >
+          <Text style={{ color: forgeMode === "CODEGEN" ? COLORS.magenta : COLORS.dim, fontSize: 10, fontFamily: "monospace", fontWeight: "700" }}>
+            {forgeMode}
+          </Text>
+        </TouchableOpacity>
 
         {/* Mode toggle + preset badge + new buttons */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -597,6 +718,26 @@ export default function ForgeScreen() {
 
           <View style={{ height: 20 }} />
         </ScrollView>
+
+        {lastGeneratedFiles.length > 0 && !isStreaming ? (
+          <TouchableOpacity
+            onPress={() => {
+              if (selectedProject) {
+                router.push({ pathname: "/project-ide", params: { id: selectedProject.id, highlight: lastGeneratedFiles.join(",") } });
+              }
+            }}
+            style={{
+              flexDirection: "row", alignItems: "center", gap: 6,
+              padding: 10, margin: 12, borderRadius: 8,
+              borderWidth: 1, borderColor: COLORS.success,
+              backgroundColor: COLORS.success + "15",
+            }}
+          >
+            <Text style={{ color: COLORS.success, fontSize: 12, fontFamily: "monospace", fontWeight: "700" }}>
+              VIEW IN IDE →
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* ENGINE DRAWER TOGGLE */}
@@ -743,7 +884,7 @@ export default function ForgeScreen() {
             maxHeight: 100,
             minHeight: 42,
           }}
-          onSubmitEditing={handleSend}
+          onSubmitEditing={forgeMode === "CODEGEN" && selectedProject ? handleCodegen : handleSend}
           returnKeyType="send"
           blurOnSubmit={false}
         />
@@ -768,7 +909,7 @@ export default function ForgeScreen() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={handleSend}
+            onPress={forgeMode === "CODEGEN" && selectedProject ? handleCodegen : handleSend}
             disabled={!inputText.trim()}
             accessibilityLabel="Send request"
             accessibilityRole="button"

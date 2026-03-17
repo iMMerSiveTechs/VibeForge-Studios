@@ -7,12 +7,14 @@ import {
   DEFAULT_SYSTEM_PROMPT,
   detectProvider,
   parseResponseText,
+  selectBestProvider,
   callAnthropicAPI,
   callOpenAIAPI,
   callGeminiAPI,
   callWithFallback,
   type AIResponse,
 } from "../lib/ai-utils";
+import { CODEGEN_SYSTEM_PROMPT, parseCodegenResponse, applyFileChanges } from "../lib/vce-codegen";
 
 const generateRouter = new Hono<{
   Variables: {
@@ -221,6 +223,167 @@ generateRouter.post(
         500
       );
     }
+  }
+);
+
+// ============ SSE Streaming Code Generation ============
+generateRouter.post(
+  "/:projectId/stream",
+  zValidator(
+    "json",
+    z.object({
+      prompt: z.string().min(1),
+      preset: z.enum(["FAST", "SMART", "DEEP"]).optional(),
+    })
+  ),
+  async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+    }
+
+    const projectId = c.req.param("projectId");
+    const { prompt, preset } = c.req.valid("json");
+
+    // Verify project ownership
+    const project = await db.project.findUnique({ where: { id: projectId } });
+    if (!project || project.userId !== user.id) {
+      return c.json({ error: { message: "Project not found", code: "NOT_FOUND" } }, 404);
+    }
+
+    // Resolve provider
+    const providerInfo = await selectBestProvider(db, user.id);
+    if (!providerInfo) {
+      return c.json({ error: { message: "No AI API key configured. Add one in Settings.", code: "NO_API_KEY" } }, 400);
+    }
+
+    // Create Run
+    const run = await db.run.create({
+      data: {
+        projectId,
+        status: "running",
+        inputSystem: CODEGEN_SYSTEM_PROMPT,
+        inputUser: prompt,
+        inputModel: providerInfo.model,
+        inputMaxTokens: 16000,
+        inputTemperature: 0.7,
+      },
+    });
+
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let closed = false;
+
+        function send(eventType: string, data: unknown): void {
+          if (closed) return;
+          try {
+            controller.enqueue(encoder.encode(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`));
+          } catch {
+            closed = true;
+          }
+        }
+
+        function close(): void {
+          if (!closed) {
+            closed = true;
+            try { controller.close(); } catch { /* already closed */ }
+          }
+        }
+
+        try {
+          send("progress", { phase: "analyzing", message: "Analyzing your request..." });
+
+          // Build the user prompt with project context
+          let existingFiles: Array<{ path: string; content: string }> = [];
+          try { existingFiles = JSON.parse(project.files); } catch { /* empty */ }
+
+          const contextPrompt = existingFiles.length > 0
+            ? `Current project files:\n${existingFiles.map(f => `- ${f.path}`).join("\n")}\n\nUser request: ${prompt}`
+            : `New project. User request: ${prompt}`;
+
+          send("progress", { phase: "generating", message: "Generating code..." });
+
+          // Call AI (non-streaming for structured output)
+          const aiResponse = await callWithFallback(
+            db, user.id, CODEGEN_SYSTEM_PROMPT, contextPrompt, 16000, 0.7
+          );
+
+          send("progress", { phase: "parsing", message: "Parsing AI response..." });
+
+          // Parse codegen response
+          const codegenResult = parseCodegenResponse(aiResponse.textContent);
+
+          if (!codegenResult || codegenResult.files.length === 0) {
+            // Fall back to standard VF_PACK parsing
+            const parsed = parseResponseText(aiResponse.textContent);
+            if (parsed.hasVfPack && parsed.vfPack) {
+              const changes = parsed.vfPack.files.map(f => ({ path: f.path, content: f.content, action: "create" as const }));
+              send("progress", { phase: "writing", message: `Writing ${changes.length} files...` });
+              const result = await applyFileChanges(projectId, changes, db);
+
+              await db.run.update({
+                where: { id: run.id },
+                data: {
+                  status: "done",
+                  outputTextExcerpt: aiResponse.textContent.substring(0, 500),
+                  usageInputTokens: aiResponse.inputTokens ?? null,
+                  usageOutputTokens: aiResponse.outputTokens ?? null,
+                  parseHasVfPack: true,
+                  parseFileCount: changes.length,
+                },
+              });
+
+              send("files", { changes, ...result });
+              send("done", { runId: run.id, explanation: "Generated files from AI response" });
+            } else {
+              throw new Error("AI did not generate structured code output. Try rephrasing your request.");
+            }
+          } else {
+            send("progress", { phase: "writing", message: `Writing ${codegenResult.files.length} files...` });
+
+            const result = await applyFileChanges(projectId, codegenResult.files, db);
+
+            await db.run.update({
+              where: { id: run.id },
+              data: {
+                status: "done",
+                outputTextExcerpt: codegenResult.explanation.substring(0, 500),
+                usageInputTokens: aiResponse.inputTokens ?? null,
+                usageOutputTokens: aiResponse.outputTokens ?? null,
+                parseHasVfPack: true,
+                parseFileCount: codegenResult.files.length,
+              },
+            });
+
+            send("files", { changes: codegenResult.files, ...result });
+            send("done", { runId: run.id, explanation: codegenResult.explanation });
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Unexpected error";
+          console.error("[Generate/Stream] Error:", err);
+
+          await db.run.update({
+            where: { id: run.id },
+            data: { status: "error", error: message },
+          }).catch(() => {});
+
+          send("error", { message });
+        } finally {
+          close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
+    });
   }
 );
 

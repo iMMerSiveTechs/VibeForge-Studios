@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { db } from "../prisma";
+import { encrypt, decrypt, isSensitiveKey } from "../lib/crypto";
 
 const settingsRouter = new Hono<{
   Variables: {
@@ -38,7 +39,20 @@ settingsRouter.get("/", async (c) => {
   const settings = await db.setting.findMany({ where: { userId: user.id } });
   const result: Record<string, string> = {};
   for (const s of settings) {
-    result[s.key] = maskSensitiveValue(s.key, s.value);
+    let value = s.value;
+    if (isSensitiveKey(s.key)) {
+      const decrypted = decrypt(value);
+      // If decrypt returned the same value, it's legacy plain-text — re-encrypt and save
+      if (decrypted === value) {
+        const encrypted = encrypt(value);
+        await db.setting.update({
+          where: { userId_key: { userId: user.id, key: s.key } },
+          data: { value: encrypted },
+        });
+      }
+      value = decrypted;
+    }
+    result[s.key] = maskSensitiveValue(s.key, value);
   }
   return c.json({ data: result });
 });
@@ -51,13 +65,14 @@ settingsRouter.put(
     const user = c.get("user")!;
     const body = c.req.valid("json");
 
-    const operations = Object.entries(body).map(([key, value]) =>
-      db.setting.upsert({
+    const operations = Object.entries(body).map(([key, value]) => {
+      const storedValue = isSensitiveKey(key) ? encrypt(value) : value;
+      return db.setting.upsert({
         where: { userId_key: { userId: user.id, key } },
-        update: { value },
-        create: { userId: user.id, key, value },
-      })
-    );
+        update: { value: storedValue },
+        create: { userId: user.id, key, value: storedValue },
+      });
+    });
 
     await Promise.all(operations);
 
@@ -65,7 +80,7 @@ settingsRouter.put(
     const settings = await db.setting.findMany({ where: { userId: user.id } });
     const result: Record<string, string> = {};
     for (const s of settings) {
-      result[s.key] = s.value;
+      result[s.key] = isSensitiveKey(s.key) ? decrypt(s.value) : s.value;
     }
     return c.json({ data: result });
   }
@@ -86,7 +101,21 @@ settingsRouter.get("/:key", async (c) => {
     );
   }
 
-  return c.json({ data: { key: setting.key, value: setting.value } });
+  let value = setting.value;
+  if (isSensitiveKey(setting.key)) {
+    const decrypted = decrypt(value);
+    // If decrypt returned the same value, it's legacy plain-text — re-encrypt and save
+    if (decrypted === value) {
+      const encrypted = encrypt(value);
+      await db.setting.update({
+        where: { userId_key: { userId: user.id, key } },
+        data: { value: encrypted },
+      });
+    }
+    value = decrypted;
+  }
+
+  return c.json({ data: { key: setting.key, value } });
 });
 
 // PUT /api/settings/:key - set single setting for current user
@@ -98,13 +127,14 @@ settingsRouter.put(
     const key = c.req.param("key");
     const { value } = c.req.valid("json");
 
+    const storedValue = isSensitiveKey(key) ? encrypt(value) : value;
     const setting = await db.setting.upsert({
       where: { userId_key: { userId: user.id, key } },
-      update: { value },
-      create: { userId: user.id, key, value },
+      update: { value: storedValue },
+      create: { userId: user.id, key, value: storedValue },
     });
 
-    return c.json({ data: { key: setting.key, value: setting.value } });
+    return c.json({ data: { key: setting.key, value } });
   }
 );
 

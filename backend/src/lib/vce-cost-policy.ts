@@ -131,4 +131,28 @@ export class CostTracker {
   }
 }
 
+/**
+ * Tier-aware cost policy: scales limits based on subscription plan
+ */
+export type SubscriptionPlan = "FREE" | "PRO" | "ENTERPRISE";
+
+const TIER_MULTIPLIERS: Record<SubscriptionPlan, { tokens: number; usd: number; time: number; hardCapEnabled: boolean }> = {
+  FREE: { tokens: 1, usd: 1, time: 1, hardCapEnabled: true },
+  PRO: { tokens: 3, usd: 5, time: 2, hardCapEnabled: true },
+  ENTERPRISE: { tokens: 10, usd: 100, time: 3, hardCapEnabled: false },
+};
+
+export function getTierCostPolicy(plan: SubscriptionPlan, mode: Mode): CostPolicy {
+  const base = COST_POLICIES[mode];
+  const mult = TIER_MULTIPLIERS[plan] ?? TIER_MULTIPLIERS.FREE;
+  return {
+    ...base,
+    maxInputTokens: base.maxInputTokens * mult.tokens,
+    maxOutputTokens: base.maxOutputTokens * mult.tokens,
+    softCapUSD: base.softCapUSD * mult.usd,
+    hardCapUSD: mult.hardCapEnabled ? base.hardCapUSD * mult.usd : 999,
+    maxTurnDurationMs: base.maxTurnDurationMs * mult.time,
+  };
+}
+
 export default COST_POLICIES;

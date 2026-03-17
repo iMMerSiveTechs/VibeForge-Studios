@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -20,12 +20,16 @@ import {
   Camera as CameraIcon,
   Play,
   Pause,
+  Code2,
+  RefreshCw,
+  Terminal,
 } from "lucide-react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image as ExpoImage } from "expo-image";
 import { Video, Audio, AVPlaybackStatus } from "expo-av";
 import MapView, { Marker } from "react-native-maps";
 import { CartesianChart, Bar, Line, Pie, PolarChart } from "victory-native";
+import { WebView } from "react-native-webview";
 import { api } from "@/lib/api/api";
 import { cn } from "@/lib/cn";
 import { C } from "@/theme/colors";
@@ -33,11 +37,13 @@ import { useToastStore } from "@/lib/state/toast-store";
 import { useProjectStore } from "@/lib/state/project-store";
 import { Button } from "@/components/ui/Button";
 import { Box } from "@/components/ui/Box";
+import { buildPreviewHTML } from "@/lib/preview-runtime";
 import type {
   Project,
   VfAppSpec,
   VfNode,
   VfAction,
+  FileItem,
 } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -387,11 +393,18 @@ export default function PreviewScreen() {
   const setActiveProjectId = useProjectStore((s) => s.setActiveProjectId);
   const showToast = useToastStore((s) => s.show);
 
+  const [previewMode, setPreviewMode] = useState<"spec" | "code">("spec");
+  const [showConsole, setShowConsole] = useState(false);
+  const [consoleLogs, setConsoleLogs] = useState<Array<{ level: string; message: string }>>([]);
+  const [showDeviceFrame, setShowDeviceFrame] = useState(true);
+  const webViewRef = useRef<WebView>(null);
+  const [webViewKey, setWebViewKey] = useState(0);
+
   const { data: project, error: projectError, isLoading: isProjectLoading } = useQuery({
     queryKey: ["project", activeProjectId],
     queryFn: () => api.get<Project>(`/api/projects/${activeProjectId}`),
     enabled: !!activeProjectId,
-    retry: false, // Don't retry on 404
+    retry: false,
   });
 
   // Clear stale project ID if project doesn't exist (404)
@@ -410,6 +423,40 @@ export default function PreviewScreen() {
       return null;
     }
   }, [project?.vfAppSpec]);
+
+  // Parse files for code preview
+  const parsedFiles = useMemo<FileItem[]>(() => {
+    if (!project?.files) return [];
+    try {
+      return typeof project.files === "string" ? JSON.parse(project.files) : [];
+    } catch {
+      return [];
+    }
+  }, [project?.files]);
+
+  // Build HTML for WebView
+  const previewHTML = useMemo(() => {
+    if (parsedFiles.length === 0) return null;
+    return buildPreviewHTML(parsedFiles);
+  }, [parsedFiles]);
+
+  // Auto-select code mode when project has files but no spec
+  React.useEffect(() => {
+    if (parsedFiles.length > 0 && !spec) {
+      setPreviewMode("code");
+    } else if (spec) {
+      setPreviewMode("spec");
+    }
+  }, [parsedFiles.length, spec]);
+
+  const handleWebViewMessage = useCallback((event: { nativeEvent: { data: string } }) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data) as { type: string; level: string; message: string };
+      if (msg.type === "console") {
+        setConsoleLogs(prev => [...prev.slice(-99), { level: msg.level, message: msg.message }]);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const [currentScreen, setCurrentScreen] = useState<string | null>(null);
   const [previewState, setPreviewState] = useState<Record<string, unknown>>({});
@@ -1006,18 +1053,135 @@ export default function PreviewScreen() {
   // ---------------------------------------------------------------------------
   // Main render
   // ---------------------------------------------------------------------------
+
+  // Code Preview mode (WebView)
+  if (previewMode === "code" && previewHTML && activeProjectId) {
+    return (
+      <SafeAreaView className="flex-1 bg-vf-bg" edges={["top"]}>
+        {/* Header */}
+        <View className="px-4 pt-3 pb-2">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center">
+              <Code2 size={18} color={C.cy} />
+              <Text
+                className="text-vf-cyan text-lg ml-2 uppercase tracking-widest"
+                style={{ fontFamily: "monospace" }}
+              >
+                Code Preview
+              </Text>
+            </View>
+            {/* Mode toggle + toolbar */}
+            <View className="flex-row items-center" style={{ gap: 6 }}>
+              {spec ? (
+                <Pressable
+                  onPress={() => setPreviewMode("spec")}
+                  className="px-2 py-1 rounded border"
+                  style={{ borderColor: C.dim }}
+                >
+                  <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>SPEC</Text>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={() => setWebViewKey(k => k + 1)} hitSlop={8}>
+                <RefreshCw size={16} color={C.cy} />
+              </Pressable>
+              <Pressable onPress={() => setShowConsole(v => !v)} hitSlop={8}>
+                <Terminal size={16} color={showConsole ? C.green : C.dim} />
+              </Pressable>
+              <Pressable onPress={() => setShowDeviceFrame(v => !v)} hitSlop={8}>
+                <Smartphone size={16} color={showDeviceFrame ? C.mg : C.dim} />
+              </Pressable>
+            </View>
+          </View>
+          <View className="h-px" style={{ backgroundColor: C.b1 }} />
+        </View>
+
+        {/* WebView */}
+        <View className="flex-1" style={showDeviceFrame ? { padding: 8 } : undefined}>
+          {showDeviceFrame ? (
+            <View style={{
+              flex: 1, borderRadius: 20, borderWidth: 2, borderColor: C.b2,
+              overflow: "hidden", backgroundColor: "#020203",
+            }}>
+              {/* Notch */}
+              <View style={{
+                alignSelf: "center", width: 120, height: 24, borderBottomLeftRadius: 12,
+                borderBottomRightRadius: 12, backgroundColor: "#020203", zIndex: 10,
+              }} />
+              <WebView
+                key={webViewKey}
+                ref={webViewRef}
+                source={{ html: previewHTML }}
+                style={{ flex: 1, backgroundColor: "#020203" }}
+                onMessage={handleWebViewMessage}
+                javaScriptEnabled
+                originWhitelist={["*"]}
+              />
+            </View>
+          ) : (
+            <WebView
+              key={webViewKey}
+              ref={webViewRef}
+              source={{ html: previewHTML }}
+              style={{ flex: 1, backgroundColor: "#020203" }}
+              onMessage={handleWebViewMessage}
+              javaScriptEnabled
+              originWhitelist={["*"]}
+            />
+          )}
+        </View>
+
+        {/* Console panel */}
+        {showConsole ? (
+          <View style={{
+            maxHeight: 160, backgroundColor: "#0a0a0a", borderTopWidth: 1, borderTopColor: C.b1,
+          }}>
+            <View className="flex-row items-center justify-between px-3 py-1.5">
+              <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>CONSOLE ({consoleLogs.length})</Text>
+              <Pressable onPress={() => setConsoleLogs([])} hitSlop={8}>
+                <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>CLEAR</Text>
+              </Pressable>
+            </View>
+            <ScrollView style={{ paddingHorizontal: 12 }}>
+              {consoleLogs.map((log, i) => (
+                <Text key={i} style={{
+                  color: log.level === "error" ? C.red : log.level === "warn" ? C.warn : C.cy,
+                  fontSize: 10, fontFamily: "monospace", marginBottom: 1,
+                }}>
+                  {log.message}
+                </Text>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+      </SafeAreaView>
+    );
+  }
+
+  // Spec Preview mode (original)
   return (
     <SafeAreaView className="flex-1 bg-vf-bg" edges={["top"]}>
       {/* Header */}
       <View className="px-4 pt-3 pb-2">
-        <View className="flex-row items-center mb-2">
-          <Smartphone size={18} color={C.cy} />
-          <Text
-            className="text-vf-cyan text-lg ml-2 uppercase tracking-widest"
-            style={{ fontFamily: "monospace" }}
-          >
-            Preview
-          </Text>
+        <View className="flex-row items-center justify-between mb-2">
+          <View className="flex-row items-center">
+            <Smartphone size={18} color={C.cy} />
+            <Text
+              className="text-vf-cyan text-lg ml-2 uppercase tracking-widest"
+              style={{ fontFamily: "monospace" }}
+            >
+              Preview
+            </Text>
+          </View>
+          {/* Mode toggle */}
+          {parsedFiles.length > 0 ? (
+            <Pressable
+              onPress={() => setPreviewMode("code")}
+              className="px-2 py-1 rounded border"
+              style={{ borderColor: C.mg }}
+            >
+              <Text style={{ color: C.mg, fontSize: 10, fontFamily: "monospace" }}>CODE</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         {/* Breadcrumb / Navigation */}
@@ -1042,7 +1206,7 @@ export default function PreviewScreen() {
               className="text-vf-dim text-xs"
               style={{ fontFamily: "monospace" }}
             >
-              {spec.name}
+              {spec?.name ?? ""}
             </Text>
             <Text
               className="text-vf-dim text-xs mx-1"
