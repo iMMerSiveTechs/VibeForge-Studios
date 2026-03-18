@@ -11,6 +11,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -76,6 +77,164 @@ interface HistoryMessage {
   content: string;
   createdAt: string;
 }
+
+// ============ Styles ============
+const styles = StyleSheet.create({
+  systemMessageContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    alignItems: "center",
+  },
+  systemMessageText: {
+    fontSize: 11,
+    fontFamily: "monospace",
+  },
+  userMessageOuter: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    alignItems: "flex-end" as const,
+  },
+  assistantMessageOuter: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    alignItems: "flex-start" as const,
+  },
+  userBubble: {
+    maxWidth: "85%" as unknown as number,
+    backgroundColor: COLORS.violet + "60",
+    borderRadius: 12,
+    borderTopRightRadius: 4,
+    borderTopLeftRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.violet,
+  },
+  assistantBubble: {
+    maxWidth: "85%" as unknown as number,
+    backgroundColor: COLORS.surfaceHigh,
+    borderRadius: 12,
+    borderTopRightRadius: 12,
+    borderTopLeftRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.dimmer,
+  },
+  userText: {
+    color: COLORS.lilac,
+    fontSize: 13,
+    fontFamily: "monospace",
+    lineHeight: 19,
+  },
+  assistantText: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontFamily: "monospace",
+    lineHeight: 19,
+  },
+  fileBadgeRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginTop: 8,
+    gap: 8,
+  },
+  fileBadge: {
+    backgroundColor: COLORS.cyan + "18",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: COLORS.cyan + "30",
+  },
+  fileBadgeText: {
+    color: COLORS.cyan,
+    fontSize: 10,
+    fontFamily: "monospace",
+    fontWeight: "700" as const,
+  },
+  previewButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 4,
+    backgroundColor: COLORS.success + "18",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: COLORS.success + "30",
+  },
+  previewText: {
+    color: COLORS.success,
+    fontSize: 10,
+    fontFamily: "monospace",
+    fontWeight: "700" as const,
+  },
+});
+
+// ============ Memoized Message Item ============
+const MessageItem = React.memo(function MessageItem({
+  item,
+  enginePhase,
+  onPreview,
+}: {
+  item: ChatMessage;
+  enginePhase: string;
+  onPreview: () => void;
+}) {
+  if (item.streamingRole) {
+    return (
+      <StreamingMessage
+        role={item.streamingRole}
+        text={item.content}
+        isStreaming={enginePhase === "streaming"}
+      />
+    );
+  }
+
+  const isUser = item.role === "user";
+  const isSystem = item.role === "system";
+  const isAssistant = item.role === "assistant";
+
+  if (isSystem) {
+    return (
+      <View style={styles.systemMessageContainer}>
+        <Text
+          style={[
+            styles.systemMessageText,
+            { color: item.content.startsWith("Error") ? COLORS.error : COLORS.dim },
+          ]}
+        >
+          {item.content}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={isUser ? styles.userMessageOuter : styles.assistantMessageOuter}>
+      <View style={isUser ? styles.userBubble : styles.assistantBubble}>
+        <Text style={isUser ? styles.userText : styles.assistantText}>
+          {item.content}
+        </Text>
+
+        {isAssistant && item.fileCount ? (
+          <View style={styles.fileBadgeRow}>
+            <View style={styles.fileBadge}>
+              <Text style={styles.fileBadgeText}>
+                {item.fileCount} files
+              </Text>
+            </View>
+            <Pressable onPress={onPreview} style={styles.previewButton}>
+              <Eye size={10} color={COLORS.success} />
+              <Text style={styles.previewText}>Preview</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+});
 
 // ============ Main Component ============
 export default function ForgeScreen() {
@@ -242,137 +401,19 @@ export default function ForgeScreen() {
     }
   }, [turnId]);
 
+  const handlePreview = useCallback(() => {
+    router.push("/(app)/(tabs)/preview");
+  }, [router]);
+
   const renderMessage = useCallback(
-    ({ item }: { item: ChatMessage }) => {
-      // Render streaming messages with StreamingMessage component
-      if (item.streamingRole) {
-        return (
-          <StreamingMessage
-            role={item.streamingRole}
-            text={item.content}
-            isStreaming={enginePhase === "streaming"}
-          />
-        );
-      }
-
-      const isUser = item.role === "user";
-      const isSystem = item.role === "system";
-      const isAssistant = item.role === "assistant";
-
-      if (isSystem) {
-        return (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 4, alignItems: "center" }}>
-            <Text
-              style={{
-                color: item.content.startsWith("Error") ? COLORS.error : COLORS.dim,
-                fontSize: 11,
-                fontFamily: "monospace",
-              }}
-            >
-              {item.content}
-            </Text>
-          </View>
-        );
-      }
-
-      return (
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 6,
-            alignItems: isUser ? "flex-end" : "flex-start",
-          }}
-        >
-          <View
-            style={{
-              maxWidth: "85%",
-              backgroundColor: isUser
-                ? COLORS.violet + "60"
-                : COLORS.surfaceHigh,
-              borderRadius: 12,
-              borderTopRightRadius: isUser ? 4 : 12,
-              borderTopLeftRadius: isUser ? 12 : 4,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              borderWidth: 1,
-              borderColor: isUser ? COLORS.violet : COLORS.dimmer,
-            }}
-          >
-            <Text
-              style={{
-                color: isUser ? COLORS.lilac : COLORS.text,
-                fontSize: 13,
-                fontFamily: "monospace",
-                lineHeight: 19,
-              }}
-            >
-              {item.content}
-            </Text>
-
-            {/* File count badge + Preview button for assistant messages */}
-            {isAssistant && item.fileCount ? (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 8,
-                  gap: 8,
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: COLORS.cyan + "18",
-                    borderRadius: 6,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderWidth: 1,
-                    borderColor: COLORS.cyan + "30",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: COLORS.cyan,
-                      fontSize: 10,
-                      fontFamily: "monospace",
-                      fontWeight: "700",
-                    }}
-                  >
-                    {item.fileCount} files
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => router.push("/(app)/(tabs)/preview")}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    backgroundColor: COLORS.success + "18",
-                    borderRadius: 6,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderWidth: 1,
-                    borderColor: COLORS.success + "30",
-                  }}
-                >
-                  <Eye size={10} color={COLORS.success} />
-                  <Text
-                    style={{
-                      color: COLORS.success,
-                      fontSize: 10,
-                      fontFamily: "monospace",
-                      fontWeight: "700",
-                    }}
-                  >
-                    Preview
-                  </Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
-        </View>
-      );
-    },
-    [router, enginePhase]
+    ({ item }: { item: ChatMessage }) => (
+      <MessageItem
+        item={item}
+        enginePhase={enginePhase}
+        onPreview={handlePreview}
+      />
+    ),
+    [enginePhase, handlePreview]
   );
 
   return (
@@ -547,6 +588,9 @@ export default function ForgeScreen() {
           keyExtractor={(item) => item.id}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingVertical: 12 }}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           ListEmptyComponent={
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
               <Cpu size={32} color={COLORS.dimmer} />
