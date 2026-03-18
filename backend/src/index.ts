@@ -19,6 +19,7 @@ import { subscriptionsRouter } from "./routes/subscriptions";
 import { buildsRouter } from "./routes/builds";
 import { codegenRouter } from "./routes/codegen";
 import { templatesRouter } from "./routes/templates";
+import { snapshotsRouter } from "./routes/snapshots";
 import { logger } from "hono/logger";
 import { rateLimit, getClientIP, getUserId } from "./middleware/rate-limit";
 
@@ -117,6 +118,7 @@ app.route("/api/subscriptions", subscriptionsRouter);
 app.route("/api/builds", buildsRouter);
 app.route("/api/codegen", codegenRouter);
 app.route("/api/templates", templatesRouter);
+app.route("/api", snapshotsRouter);
 
 // Mount upload endpoint directly
 app.post("/api/upload", async (c) => {

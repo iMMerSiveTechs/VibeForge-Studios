@@ -26,6 +26,7 @@ import {
   Code2,
   Rocket,
   Crown,
+  Clock,
 } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { api } from "@/lib/api/api";
@@ -459,6 +460,20 @@ export default function ProjectDetailScreen() {
         </View>
         {/* Build & Ship Section */}
         <BuildShipSection projectId={id ?? ""} router={router} />
+
+        <View className="mt-2">
+          <Button
+            label="History"
+            onPress={() =>
+              router.push({
+                pathname: "/project-history",
+                params: { projectId: id },
+              })
+            }
+            variant="secondary"
+            icon={<Clock size={16} color="#000" />}
+          />
+        </View>
 
         <View className="mt-3">
           <Button

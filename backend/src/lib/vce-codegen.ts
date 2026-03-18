@@ -106,6 +106,15 @@ export async function applyFileChanges(
     throw new Error(`Project not found: ${projectId}`);
   }
 
+  // Create a snapshot of current files before applying changes
+  await db.projectSnapshot.create({
+    data: {
+      projectId,
+      files: project.files,
+      description: "Auto-save before code generation",
+    },
+  });
+
   // Parse existing files
   let files: Record<string, string> = {};
   if (project.files) {

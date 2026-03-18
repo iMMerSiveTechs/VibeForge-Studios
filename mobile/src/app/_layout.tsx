@@ -56,6 +56,7 @@ function RootLayoutNav() {
         <Stack.Screen name="project-detail" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="project-ide" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="build-status" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="project-history" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>
       <Toast />
