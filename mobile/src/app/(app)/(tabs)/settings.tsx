@@ -3,7 +3,7 @@ import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Switch } f
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Settings as SettingsIcon, Shield, Info } from "lucide-react-native";
+import { Settings as SettingsIcon, Shield, Info, BarChart3 } from "lucide-react-native";
 import { api } from "@/lib/api/api";
 import { authClient } from "@/lib/auth/auth-client";
 import { C } from "@/theme/colors";
@@ -473,6 +473,34 @@ export default function SettingsScreen() {
             >
               AI-powered cognitive engine for building and designing software.
             </Text>
+          </Box>
+        </View>
+
+        {/* Usage & Analytics */}
+        <View className="mt-2 mb-4">
+          <Text
+            className="text-xs uppercase tracking-widest mb-2"
+            style={{ fontFamily: "monospace", color: C.cy }}
+          >
+            Insights
+          </Text>
+          <Box accentColor={C.cy} onPress={() => router.push("/analytics")}>
+            <View className="flex-row items-center" style={{ gap: 10 }}>
+              <BarChart3 size={18} color={C.cy} />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{ color: C.text, fontSize: 13, fontFamily: "monospace", fontWeight: "600" }}
+                >
+                  Usage & Analytics
+                </Text>
+                <Text
+                  style={{ color: C.dim, fontSize: 10, fontFamily: "monospace", marginTop: 2 }}
+                >
+                  View tokens, costs, and activity
+                </Text>
+              </View>
+              <Text style={{ color: C.dim, fontSize: 16 }}>›</Text>
+            </View>
           </Box>
         </View>
 

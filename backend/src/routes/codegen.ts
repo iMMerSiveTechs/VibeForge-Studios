@@ -249,6 +249,28 @@ codegenRouter.post(
         ],
       });
 
+      // Track usage: upsert UsageRecord for today
+      try {
+        const responseText = aiResponse.textContent ?? "";
+        const tokenCount = Math.ceil(responseText.length / 4);
+        const today = new Date().toISOString().split("T")[0]!;
+        await db.usageRecord.upsert({
+          where: { userId_date: { userId: user.id, date: today } },
+          update: {
+            tokensUsed: { increment: tokenCount },
+            requestCount: { increment: 1 },
+          },
+          create: {
+            userId: user.id,
+            date: today,
+            tokensUsed: tokenCount,
+            requestCount: 1,
+          },
+        });
+      } catch (usageErr) {
+        console.error("[Codegen] Failed to track usage:", usageErr);
+      }
+
       // Reload project to get updated files
       const updatedProject = await db.project.findUnique({
         where: { id: projectId },

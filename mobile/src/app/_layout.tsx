@@ -58,6 +58,7 @@ function RootLayoutNav() {
         <Stack.Screen name="build-status" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="project-history" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="analytics" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>
       <Toast />
     </ThemeProvider>

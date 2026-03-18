@@ -18,6 +18,7 @@ import { feedbackRouter } from "./routes/feedback";
 import { subscriptionsRouter } from "./routes/subscriptions";
 import { buildsRouter } from "./routes/builds";
 import { codegenRouter } from "./routes/codegen";
+import { analyticsRouter } from "./routes/analytics";
 import { templatesRouter } from "./routes/templates";
 import { snapshotsRouter } from "./routes/snapshots";
 import { logger } from "hono/logger";
@@ -117,6 +118,7 @@ app.route("/api/feedback", feedbackRouter);
 app.route("/api/subscriptions", subscriptionsRouter);
 app.route("/api/builds", buildsRouter);
 app.route("/api/codegen", codegenRouter);
+app.route("/api/analytics", analyticsRouter);
 app.route("/api/templates", templatesRouter);
 app.route("/api", snapshotsRouter);
 
