@@ -21,6 +21,14 @@ projectsRouter.get("/", async (c) => {
   const projects = await db.project.findMany({
     where: { userId: user.id },
     orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      bundleId: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
   return c.json({ data: projects });
 });

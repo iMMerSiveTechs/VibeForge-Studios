@@ -21,6 +21,8 @@ import { codegenRouter } from "./routes/codegen";
 import { analyticsRouter } from "./routes/analytics";
 import { templatesRouter } from "./routes/templates";
 import { snapshotsRouter } from "./routes/snapshots";
+import { notificationsRouter } from "./routes/notifications";
+import { sharingRouter } from "./routes/sharing";
 import { logger } from "hono/logger";
 import { rateLimit, getClientIP, getUserId } from "./middleware/rate-limit";
 
@@ -121,6 +123,8 @@ app.route("/api/codegen", codegenRouter);
 app.route("/api/analytics", analyticsRouter);
 app.route("/api/templates", templatesRouter);
 app.route("/api", snapshotsRouter);
+app.route("/api/notifications", notificationsRouter);
+app.route("/api", sharingRouter);
 
 // Mount upload endpoint directly
 app.post("/api/upload", async (c) => {

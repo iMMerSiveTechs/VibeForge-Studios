@@ -16,6 +16,7 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  pushToken     String?
   sessions      Session[]
   accounts      Account[]
   projects      Project[]
@@ -25,6 +26,7 @@ model User {
   subscription  Subscription?
   usageRecords  UsageRecord[]
   builds        Build[]
+  memberships   ProjectMember[]
 }
 
 model Session {
@@ -84,6 +86,7 @@ model Project {
   builds              Build[]
   generationMessages  GenerationMessage[]
   snapshots           ProjectSnapshot[]
+  members             ProjectMember[]
 }
 
 model GenerationMessage {
@@ -186,6 +189,19 @@ model ProjectSnapshot {
   files       String   // JSON string of files state
   description String   @default("")
   createdAt   DateTime @default(now())
+}
+
+// Project Sharing
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("viewer") // "owner", "editor", "viewer"
+  invitedAt DateTime @default(now())
+
+  @@unique([projectId, userId])
 }
 
 // EAS Build tracking
