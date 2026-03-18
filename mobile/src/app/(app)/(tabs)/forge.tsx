@@ -1,15 +1,14 @@
 /**
- * Forge Screen — Chat-based code generation.
+ * Forge Screen — Chat-based code generation via VCE engine streaming.
  * User selects a project, types prompts, gets code generated with conversation memory.
  */
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   FlatList,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -24,12 +23,18 @@ import {
   Cpu,
   Brain,
   Activity,
+  Square,
 } from "lucide-react-native";
 import { api } from "@/lib/api/api";
 import { useFeatureFlags } from "@/lib/feature-flags";
 import { useProjectStore } from "@/lib/state/project-store";
+import { useEngineStore } from "@/lib/state/engine-store";
+import { engineClient } from "@/engine/EngineClient";
+import type { EngineCallbacks } from "@/engine/types";
 import { AIToolsModal } from "@/components/forge/AIToolsModal";
 import { ActivityModal } from "@/components/forge/ActivityModal";
+import { StreamingMessage } from "@/components/forge/StreamingMessage";
+import { PhaseIndicator } from "@/components/forge/PhaseIndicator";
 
 // ============ Theme ============
 const COLORS = {
@@ -62,6 +67,7 @@ interface ChatMessage {
   fileCount?: number;
   explanation?: string;
   timestamp: number;
+  streamingRole?: string;
 }
 
 interface HistoryMessage {
@@ -71,19 +77,9 @@ interface HistoryMessage {
   createdAt: string;
 }
 
-interface CodegenResult {
-  changedFiles: string[];
-  explanation: string;
-  allFiles: string[];
-  created: number;
-  updated: number;
-  deleted: number;
-}
-
 // ============ Main Component ============
 export default function ForgeScreen() {
   const [inputText, setInputText] = useState<string>("");
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [showAITools, setShowAITools] = useState(false);
@@ -92,6 +88,15 @@ export default function ForgeScreen() {
   const showAdvanced = useFeatureFlags((s) => s.SHOW_ADVANCED_FORGE);
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const setActiveProjectId = useProjectStore((s) => s.setActiveProjectId);
+
+  // Engine store selectors
+  const enginePhase = useEngineStore((s) => s.phase);
+  const engineIsStreaming = useEngineStore((s) => s.isStreaming);
+  const streamingTexts = useEngineStore((s) => s.streamingTexts);
+  const turnId = useEngineStore((s) => s.turnId);
+  const activeRole = useEngineStore((s) => s.activeRole);
+
+  const isGenerating = enginePhase !== "idle" && enginePhase !== "done" && enginePhase !== "error" && enginePhase !== "interrupted";
 
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
@@ -140,6 +145,21 @@ export default function ForgeScreen() {
     setMessages(restored);
   }, [historyData]);
 
+  // Derive display messages: base messages + streaming messages when active
+  const displayMessages = useMemo(() => {
+    if (enginePhase === "idle" || enginePhase === "done" || enginePhase === "error" || enginePhase === "interrupted") {
+      return messages;
+    }
+    const streamMsgs: ChatMessage[] = Object.entries(streamingTexts).map(([role, text]) => ({
+      id: `streaming-${role}`,
+      role: "assistant" as const,
+      content: text,
+      timestamp: Date.now(),
+      streamingRole: role,
+    }));
+    return [...messages, ...streamMsgs];
+  }, [messages, streamingTexts, enginePhase]);
+
   const addMessage = useCallback(
     (msg: Omit<ChatMessage, "id" | "timestamp">) => {
       const newMsg: ChatMessage = {
@@ -172,39 +192,69 @@ export default function ForgeScreen() {
       ...prev,
       { id: typingId, role: "system", content: "Generating...", timestamp: Date.now() },
     ]);
-    setIsGenerating(true);
 
-    try {
-      const result = await api.post<CodegenResult>(
-        `/api/codegen/${selectedProject.id}`,
-        { prompt: text }
-      );
+    const engineStore = useEngineStore.getState();
+    engineStore.setStreaming(true);
 
-      // Remove typing indicator
-      setMessages((prev) => prev.filter((m) => m.id !== typingId));
+    const callbacks: EngineCallbacks = {
+      onRoute: (decision) => {
+        useEngineStore.getState().setRouteDecision(decision);
+      },
+      onPhase: (phase, role) => {
+        useEngineStore.getState().setPhase(phase, role);
+      },
+      onDelta: (delta) => {
+        useEngineStore.getState().appendDelta(delta.role, delta.delta);
+        // Remove typing indicator once we start getting deltas
+        setMessages((prev) => prev.filter((m) => m.id !== typingId));
+      },
+      onFinal: (result) => {
+        useEngineStore.getState().setFinal(result);
+        // Remove typing indicator and add final message
+        setMessages((prev) => prev.filter((m) => m.id !== typingId));
+        addMessage({
+          role: "assistant",
+          content: result.finalText.substring(0, 500),
+          explanation: result.finalText.substring(0, 500),
+          fileCount: result.artifacts.length || undefined,
+        });
+        queryClient.invalidateQueries({ queryKey: ["project", selectedProject?.id] });
+        useEngineStore.getState().setStreaming(false);
+        useEngineStore.getState().reset();
+      },
+      onError: (error) => {
+        useEngineStore.getState().setError(error);
+        setMessages((prev) => prev.filter((m) => m.id !== typingId));
+        addMessage({ role: "system", content: `Error: ${error.message}` });
+        useEngineStore.getState().setStreaming(false);
+        useEngineStore.getState().reset();
+      },
+    };
 
-      addMessage({
-        role: "assistant",
-        content: result.explanation,
-        explanation: result.explanation,
-        fileCount: result.changedFiles.length,
-      });
-
-      // Invalidate project query so preview picks up new files
-      queryClient.invalidateQueries({ queryKey: ["project", selectedProject.id] });
-    } catch (err) {
-      // Remove typing indicator
-      setMessages((prev) => prev.filter((m) => m.id !== typingId));
-
-      const errorMsg = err instanceof Error ? err.message : "Generation failed";
-      addMessage({ role: "system", content: `Error: ${errorMsg}` });
-    } finally {
-      setIsGenerating(false);
-    }
+    await engineClient.generate(text, callbacks, { projectId: selectedProject.id });
   }, [inputText, selectedProject, addMessage, queryClient]);
+
+  const handleInterrupt = useCallback(() => {
+    if (turnId) {
+      engineClient.interrupt(turnId);
+      useEngineStore.getState().setStreaming(false);
+      useEngineStore.getState().reset();
+    }
+  }, [turnId]);
 
   const renderMessage = useCallback(
     ({ item }: { item: ChatMessage }) => {
+      // Render streaming messages with StreamingMessage component
+      if (item.streamingRole) {
+        return (
+          <StreamingMessage
+            role={item.streamingRole}
+            text={item.content}
+            isStreaming={enginePhase === "streaming"}
+          />
+        );
+      }
+
       const isUser = item.role === "user";
       const isSystem = item.role === "system";
       const isAssistant = item.role === "assistant";
@@ -290,7 +340,7 @@ export default function ForgeScreen() {
                     {item.fileCount} files
                   </Text>
                 </View>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => router.push("/(app)/(tabs)/preview")}
                   style={{
                     flexDirection: "row",
@@ -315,14 +365,14 @@ export default function ForgeScreen() {
                   >
                     Preview
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             ) : null}
           </View>
         </View>
       );
     },
-    [router]
+    [router, enginePhase]
   );
 
   return (
@@ -361,7 +411,7 @@ export default function ForgeScreen() {
           </View>
 
           {/* Project Picker */}
-          <TouchableOpacity
+          <Pressable
             onPress={() => setShowProjectPicker((v) => !v)}
             style={{
               flex: 1,
@@ -391,12 +441,12 @@ export default function ForgeScreen() {
               {selectedProject?.name ?? "Select project..."}
             </Text>
             <ChevronDown size={12} color={COLORS.dim} />
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Advanced controls (behind flag) */}
           {showAdvanced ? (
             <View style={{ flexDirection: "row", gap: 6 }}>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => setShowAITools(true)}
                 style={{
                   width: 32,
@@ -409,8 +459,8 @@ export default function ForgeScreen() {
                 }}
               >
                 <Brain size={14} color={COLORS.cyan} />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 onPress={() => setShowActivity(true)}
                 style={{
                   width: 32,
@@ -423,10 +473,13 @@ export default function ForgeScreen() {
                 }}
               >
                 <Activity size={14} color={COLORS.mint} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : null}
         </View>
+
+        {/* PHASE INDICATOR */}
+        <PhaseIndicator phase={enginePhase} activeRole={activeRole} />
 
         {/* PROJECT PICKER DROPDOWN */}
         {showProjectPicker ? (
@@ -439,7 +492,7 @@ export default function ForgeScreen() {
             }}
           >
             {(projects ?? []).map((p) => (
-              <TouchableOpacity
+              <Pressable
                 key={p.id}
                 onPress={() => {
                   setActiveProjectId(p.id);
@@ -467,7 +520,7 @@ export default function ForgeScreen() {
                 >
                   {p.name}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
             {(projects ?? []).length === 0 ? (
               <View style={{ padding: 16 }}>
@@ -489,7 +542,7 @@ export default function ForgeScreen() {
         {/* CHAT MESSAGES */}
         <FlatList
           ref={flatListRef}
-          data={messages}
+          data={displayMessages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           style={{ flex: 1 }}
@@ -564,7 +617,8 @@ export default function ForgeScreen() {
           />
 
           {isGenerating ? (
-            <View
+            <Pressable
+              onPress={handleInterrupt}
               style={{
                 width: 42,
                 height: 42,
@@ -572,14 +626,14 @@ export default function ForgeScreen() {
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,
-                borderColor: COLORS.cyan + "40",
-                backgroundColor: COLORS.cyan + "10",
+                borderColor: COLORS.error + "60",
+                backgroundColor: COLORS.error + "18",
               }}
             >
-              <ActivityIndicator size="small" color={COLORS.cyan} />
-            </View>
+              <Square size={16} color={COLORS.error} fill={COLORS.error} />
+            </Pressable>
           ) : (
-            <TouchableOpacity
+            <Pressable
               onPress={handleSend}
               disabled={!inputText.trim() || !selectedProject}
               style={{
@@ -607,7 +661,7 @@ export default function ForgeScreen() {
                     : COLORS.dim
                 }
               />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
 
