@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { authClient } from '@/lib/auth/auth-client';
+import { useOnboardingStore } from '@/lib/state/onboarding-store';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -55,6 +56,7 @@ function RootLayoutNav() {
         <Stack.Screen name="project-detail" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="project-ide" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="build-status" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>
       <Toast />
     </ThemeProvider>
@@ -63,12 +65,14 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
+  const onboardingLoad = useOnboardingStore((s) => s.load);
 
   useEffect(() => {
     // Load session and other initialization
     const init = async () => {
       try {
         await authClient.getSession();
+        await onboardingLoad();
       } catch (error) {
         console.error('Session init error:', error);
       } finally {
