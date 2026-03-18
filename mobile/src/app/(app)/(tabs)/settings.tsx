@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Box } from "@/components/ui/Box";
 import { Input } from "@/components/ui/Input";
 import { Dialog } from "@/components/ui/Dialog";
+import { useFeatureFlags } from "@/lib/feature-flags";
 
 interface SettingsMap {
   [key: string]: string;
@@ -34,6 +35,123 @@ const DEFAULT_SETTINGS: SettingsMap = {
   rate_openai: "10",
   rate_gemini: "7",
 };
+
+const FLAG_TOGGLES: { key: string; label: string }[] = [
+  { key: "SHOW_IMAGE_TAB", label: "Image Tab" },
+  { key: "SHOW_AUDIO_TAB", label: "Audio Tab" },
+  { key: "SHOW_PAYMENT_TAB", label: "Payment Tab" },
+  { key: "SHOW_REQUEST_TAB", label: "Request Tab" },
+  { key: "SHOW_ENV_TAB", label: "Env Tab" },
+  { key: "SHOW_ADVANCED_FORGE", label: "Advanced Forge" },
+];
+
+function DeveloperOptionsSection() {
+  const showImage = useFeatureFlags((s) => s.SHOW_IMAGE_TAB);
+  const showAudio = useFeatureFlags((s) => s.SHOW_AUDIO_TAB);
+  const showPayment = useFeatureFlags((s) => s.SHOW_PAYMENT_TAB);
+  const showRequest = useFeatureFlags((s) => s.SHOW_REQUEST_TAB);
+  const showEnv = useFeatureFlags((s) => s.SHOW_ENV_TAB);
+  const showAdvancedForge = useFeatureFlags((s) => s.SHOW_ADVANCED_FORGE);
+  const previewTier = useFeatureFlags((s) => s.PREVIEW_TIER);
+  const setFlag = useFeatureFlags((s) => s.setFlag);
+  const setPreviewTier = useFeatureFlags((s) => s.setPreviewTier);
+
+  const flagValues: Record<string, boolean> = {
+    SHOW_IMAGE_TAB: showImage,
+    SHOW_AUDIO_TAB: showAudio,
+    SHOW_PAYMENT_TAB: showPayment,
+    SHOW_REQUEST_TAB: showRequest,
+    SHOW_ENV_TAB: showEnv,
+    SHOW_ADVANCED_FORGE: showAdvancedForge,
+  };
+
+  return (
+    <View className="mt-2 mb-5">
+      <Text
+        className="text-xs uppercase tracking-widest mb-2"
+        style={{ fontFamily: "monospace", color: C.mg }}
+      >
+        Developer Options
+      </Text>
+      <Box accentColor={C.mg}>
+        {FLAG_TOGGLES.map((item, idx) => (
+          <View
+            key={item.key}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingVertical: 10,
+              borderBottomWidth: idx < FLAG_TOGGLES.length - 1 ? 1 : 0,
+              borderBottomColor: C.b1,
+            }}
+          >
+            <Text
+              style={{
+                color: C.text,
+                fontSize: 12,
+                fontFamily: "monospace",
+              }}
+            >
+              {item.label}
+            </Text>
+            <Switch
+              value={flagValues[item.key]}
+              onValueChange={(v) => setFlag(item.key, v)}
+              trackColor={{ false: C.s2, true: C.mg + "66" }}
+              thumbColor={flagValues[item.key] ? C.mg : C.dim}
+            />
+          </View>
+        ))}
+
+        {/* Preview Tier Selector */}
+        <View style={{ paddingVertical: 10 }}>
+          <Text
+            style={{
+              color: C.text,
+              fontSize: 12,
+              fontFamily: "monospace",
+              marginBottom: 8,
+            }}
+          >
+            Preview Tier
+          </Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {([1, 2, 3] as const).map((tier) => {
+              const isActive = previewTier === tier;
+              return (
+                <TouchableOpacity
+                  key={tier}
+                  onPress={() => setPreviewTier(tier)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 8,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: isActive ? C.mg : C.b1,
+                    backgroundColor: isActive ? C.mg + "22" : C.s2,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: isActive ? C.mg : C.dim,
+                      fontSize: 12,
+                      fontFamily: "monospace",
+                      fontWeight: isActive ? "700" : "400",
+                    }}
+                  >
+                    T{tier}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </Box>
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const [form, setForm] = useState<SettingsMap>({ ...DEFAULT_SETTINGS });
@@ -357,6 +475,9 @@ export default function SettingsScreen() {
             </Text>
           </Box>
         </View>
+
+        {/* Developer Options Section */}
+        <DeveloperOptionsSection />
 
         {/* Account Section */}
         <View className="mt-2">

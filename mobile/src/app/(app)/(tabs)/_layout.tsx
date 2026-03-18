@@ -12,8 +12,15 @@ import {
   MessageSquarePlus,
 } from "lucide-react-native";
 import { C } from "@/theme/colors";
+import { useFeatureFlags } from "@/lib/feature-flags";
 
 export default function TabLayout() {
+  const showImage = useFeatureFlags((s) => s.SHOW_IMAGE_TAB);
+  const showAudio = useFeatureFlags((s) => s.SHOW_AUDIO_TAB);
+  const showPayment = useFeatureFlags((s) => s.SHOW_PAYMENT_TAB);
+  const showRequest = useFeatureFlags((s) => s.SHOW_REQUEST_TAB);
+  const showEnv = useFeatureFlags((s) => s.SHOW_ENV_TAB);
+
   return (
     <Tabs
       screenOptions={{
@@ -68,6 +75,7 @@ export default function TabLayout() {
         name="image"
         options={{
           title: "Image",
+          href: showImage ? undefined : null,
           tabBarIcon: ({ color }: { color: string }) => (
             <ImageIcon size={18} color={color} />
           ),
@@ -77,6 +85,7 @@ export default function TabLayout() {
         name="audio"
         options={{
           title: "Audio",
+          href: showAudio ? undefined : null,
           tabBarIcon: ({ color }: { color: string }) => (
             <Music size={18} color={color} />
           ),
@@ -86,6 +95,7 @@ export default function TabLayout() {
         name="payment"
         options={{
           title: "Payment",
+          href: showPayment ? undefined : null,
           tabBarIcon: ({ color }: { color: string }) => (
             <CreditCard size={18} color={color} />
           ),
@@ -95,6 +105,7 @@ export default function TabLayout() {
         name="env"
         options={{
           title: "Env",
+          href: showEnv ? undefined : null,
           tabBarIcon: ({ color }: { color: string }) => (
             <KeyRound size={18} color={color} />
           ),
@@ -104,6 +115,7 @@ export default function TabLayout() {
         name="request"
         options={{
           title: "Request",
+          href: showRequest ? undefined : null,
           tabBarIcon: ({ color }: { color: string }) => (
             <MessageSquarePlus size={18} color={color} />
           ),
