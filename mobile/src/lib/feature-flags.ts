@@ -17,10 +17,10 @@ interface FeatureFlagStore {
 export const useFeatureFlags = create<FeatureFlagStore>()(
   persist(
     (set) => ({
-      SHOW_IMAGE_TAB: false,
-      SHOW_AUDIO_TAB: false,
+      SHOW_IMAGE_TAB: true,
+      SHOW_AUDIO_TAB: true,
       SHOW_PAYMENT_TAB: false,
-      SHOW_REQUEST_TAB: false,
+      SHOW_REQUEST_TAB: true,
       SHOW_ENV_TAB: false,
       SHOW_ADVANCED_FORGE: false,
       PREVIEW_TIER: 3,

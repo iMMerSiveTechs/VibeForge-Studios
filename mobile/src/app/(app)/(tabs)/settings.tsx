@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Switch } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, Pressable, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -120,7 +120,7 @@ function DeveloperOptionsSection() {
             {([1, 2, 3] as const).map((tier) => {
               const isActive = previewTier === tier;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={tier}
                   onPress={() => setPreviewTier(tier)}
                   style={{
@@ -143,7 +143,7 @@ function DeveloperOptionsSection() {
                   >
                     T{tier}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -337,7 +337,7 @@ export default function SettingsScreen() {
                         const col = providerColors[provider];
                         const tierColor = tierColors[m.tier] ?? C.dim;
                         return (
-                          <TouchableOpacity
+                          <Pressable
                             key={m.modelId}
                             onPress={() => updateField(settingKey as string, m.modelId)}
                             style={{
@@ -363,7 +363,7 @@ export default function SettingsScreen() {
                             <Text style={{ color: isSelected ? col : C.text, fontSize: 11, fontFamily: "monospace", fontWeight: isSelected ? "700" : "400" }} numberOfLines={2}>
                               {m.displayName}
                             </Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         );
                       })}
                     </View>

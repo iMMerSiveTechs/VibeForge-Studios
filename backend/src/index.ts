@@ -72,7 +72,7 @@ app.use("*", async (c, next) => {
 app.use("/api/auth/*", rateLimit({ windowMs: 60_000, max: 10, keyFn: getClientIP }));
 app.use("/api/ai/*", rateLimit({ windowMs: 60_000, max: 20, keyFn: getUserId }));
 app.use("/api/vce/*", rateLimit({ windowMs: 60_000, max: 10, keyFn: getUserId }));
-app.use("/api/generate/*", rateLimit({ windowMs: 60_000, max: 5, keyFn: getUserId }));
+app.use("/api/generate/*", rateLimit({ windowMs: 60_000, max: 15, keyFn: getUserId }));
 
 // Mount auth handler
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));

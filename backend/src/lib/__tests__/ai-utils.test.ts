@@ -116,9 +116,9 @@ function foo() {}
       expect(result.hasVfApp).toBe(false);
       expect(result.hasVfPack).toBe(false);
       expect(result.snippetFiles.length).toBe(2);
-      expect(result.snippetFiles[0].path).toContain("snippet_0");
-      expect(result.snippetFiles[0].path).toContain(".ts");
-      expect(result.snippetFiles[1].path).toContain(".js");
+      expect(result.snippetFiles[0]!.path).toContain("snippet_0");
+      expect(result.snippetFiles[0]!.path).toContain(".ts");
+      expect(result.snippetFiles[1]!.path).toContain(".js");
     });
   });
 

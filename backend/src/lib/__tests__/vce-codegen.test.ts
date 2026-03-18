@@ -14,9 +14,9 @@ describe("parseCodegenResponse", () => {
       const result = parseCodegenResponse(input);
       expect(result).not.toBeNull();
       expect(result!.files).toHaveLength(1);
-      expect(result!.files[0].path).toBe("app/index.tsx");
-      expect(result!.files[0].content).toBe("export default App;");
-      expect(result!.files[0].action).toBe("create");
+      expect(result!.files[0]!.path).toBe("app/index.tsx");
+      expect(result!.files[0]!.content).toBe("export default App;");
+      expect(result!.files[0]!.action).toBe("create");
       expect(result!.explanation).toBe("Created the app entry point");
     });
 
@@ -54,7 +54,7 @@ Let me know if you need changes.`;
       const result = parseCodegenResponse(input);
       expect(result).not.toBeNull();
       expect(result!.files).toHaveLength(1);
-      expect(result!.files[0].path).toBe("app/index.tsx");
+      expect(result!.files[0]!.path).toBe("app/index.tsx");
       expect(result!.explanation).toBe("Created app");
     });
 
@@ -85,7 +85,7 @@ Hope this helps!`;
       const result = parseCodegenResponse(input);
       expect(result).not.toBeNull();
       expect(result!.files).toHaveLength(1);
-      expect(result!.files[0].path).toBe("app.tsx");
+      expect(result!.files[0]!.path).toBe("app.tsx");
     });
   });
 

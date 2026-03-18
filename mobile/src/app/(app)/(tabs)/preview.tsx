@@ -18,11 +18,17 @@ import {
   RefreshCw,
   Terminal,
   Smartphone,
+  ChevronDown,
 } from "lucide-react-native";
 import { WebView } from "react-native-webview";
 import { api } from "@/lib/api/api";
 import { C } from "@/theme/colors";
 import { useProjectStore } from "@/lib/state/project-store";
+
+interface ProjectListItem {
+  id: string;
+  name: string;
+}
 
 interface ProjectFile {
   path: string;
@@ -42,8 +48,17 @@ export default function PreviewScreen() {
   const [showConsole, setShowConsole] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<Array<{ level: string; message: string }>>([]);
   const [showDeviceFrame, setShowDeviceFrame] = useState(true);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
   const webViewRef = useRef<WebView>(null);
   const [webViewKey, setWebViewKey] = useState(0);
+
+  // Load projects list for picker
+  const { data: projects } = useQuery<ProjectListItem[]>({
+    queryKey: ["projects"],
+    queryFn: () => api.get<ProjectListItem[]>("/api/projects"),
+  });
+
+  const selectedProject = projects?.find((p) => p.id === activeProjectId) ?? null;
 
   const {
     data: project,
@@ -119,6 +134,101 @@ export default function PreviewScreen() {
   if (!activeProjectId) {
     return (
       <SafeAreaView className="flex-1 bg-vf-bg" edges={["top"]}>
+        {/* Header with project picker */}
+        <View className="px-4 pt-3 pb-2">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center">
+              <Eye size={18} color={C.cy} />
+              <Text
+                className="text-vf-cyan text-lg ml-2 uppercase tracking-widest"
+                style={{ fontFamily: "monospace" }}
+              >
+                Preview
+              </Text>
+            </View>
+            {/* Project Picker */}
+            <Pressable
+              onPress={() => setShowProjectPicker((v) => !v)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: C.dim + "60",
+                backgroundColor: "transparent",
+                gap: 6,
+              }}
+            >
+              <Text
+                style={{
+                  color: C.dim,
+                  fontSize: 11,
+                  fontFamily: "monospace",
+                }}
+                numberOfLines={1}
+              >
+                Select project...
+              </Text>
+              <ChevronDown size={12} color={C.dim} />
+            </Pressable>
+          </View>
+          <View className="h-px" style={{ backgroundColor: C.b1 }} />
+        </View>
+
+        {/* Project picker dropdown */}
+        {showProjectPicker ? (
+          <View
+            style={{
+              backgroundColor: C.s2,
+              borderBottomWidth: 1,
+              borderBottomColor: C.b1,
+              maxHeight: 200,
+            }}
+          >
+            {(projects ?? []).map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => {
+                  setActiveProjectId(p.id);
+                  setShowProjectPicker(false);
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: C.b1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: C.text,
+                    fontSize: 13,
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {p.name}
+                </Text>
+              </Pressable>
+            ))}
+            {(projects ?? []).length === 0 ? (
+              <View style={{ padding: 16 }}>
+                <Text
+                  style={{
+                    color: C.dim,
+                    fontSize: 12,
+                    fontFamily: "monospace",
+                    textAlign: "center",
+                  }}
+                >
+                  No projects. Create one in Projects tab.
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         <View className="flex-1 items-center justify-center px-8">
           <View
             className="w-16 h-16 rounded-2xl items-center justify-center mb-4"
@@ -130,13 +240,13 @@ export default function PreviewScreen() {
             className="text-vf-dim text-sm text-center mb-2"
             style={{ fontFamily: "monospace" }}
           >
-            No project selected
+            Select a project
           </Text>
           <Text
             className="text-vf-dim text-xs text-center"
             style={{ fontFamily: "monospace" }}
           >
-            Select a project in the Projects tab first.
+            Use the dropdown above to pick a project to preview.
           </Text>
         </View>
       </SafeAreaView>
@@ -238,8 +348,35 @@ export default function PreviewScreen() {
               </Text>
             </View>
           </View>
-          {/* Toolbar */}
+          {/* Project Picker + Toolbar */}
           <View className="flex-row items-center" style={{ gap: 10 }}>
+            <Pressable
+              onPress={() => setShowProjectPicker((v) => !v)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: selectedProject ? C.mg : C.dim + "60",
+                backgroundColor: selectedProject ? C.mg + "20" : "transparent",
+                gap: 4,
+                maxWidth: 120,
+              }}
+            >
+              <Text
+                style={{
+                  color: selectedProject ? C.cy : C.dim,
+                  fontSize: 10,
+                  fontFamily: "monospace",
+                }}
+                numberOfLines={1}
+              >
+                {selectedProject?.name ?? "Select..."}
+              </Text>
+              <ChevronDown size={10} color={C.dim} />
+            </Pressable>
             <Pressable
               onPress={() => {
                 setWebViewKey((k) => k + 1);
@@ -265,6 +402,60 @@ export default function PreviewScreen() {
         </View>
         <View className="h-px" style={{ backgroundColor: C.b1 }} />
       </View>
+
+      {/* Project picker dropdown */}
+      {showProjectPicker ? (
+        <View
+          style={{
+            backgroundColor: C.s2,
+            borderBottomWidth: 1,
+            borderBottomColor: C.b1,
+            maxHeight: 200,
+          }}
+        >
+          {(projects ?? []).map((p) => (
+            <Pressable
+              key={p.id}
+              onPress={() => {
+                setActiveProjectId(p.id);
+                setShowProjectPicker(false);
+              }}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: C.b1,
+                backgroundColor:
+                  p.id === activeProjectId ? C.mg + "20" : "transparent",
+              }}
+            >
+              <Text
+                style={{
+                  color: p.id === activeProjectId ? C.cy : C.text,
+                  fontSize: 13,
+                  fontFamily: "monospace",
+                }}
+              >
+                {p.name}
+              </Text>
+            </Pressable>
+          ))}
+          {(projects ?? []).length === 0 ? (
+            <View style={{ padding: 16 }}>
+              <Text
+                style={{
+                  color: C.dim,
+                  fontSize: 12,
+                  fontFamily: "monospace",
+                  textAlign: "center",
+                }}
+              >
+                No projects. Create one in Projects tab.
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {/* WebView */}
       <View
