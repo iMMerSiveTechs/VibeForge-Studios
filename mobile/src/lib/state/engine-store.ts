@@ -24,6 +24,7 @@ interface EngineState {
   lastFinal: EngineFinal | null;
   lastError: EngineError | null;
   lastDurationMs: number;
+  streamingTexts: Record<string, string>;
 
   // Actions
   setPhase: (phase: EnginePhase, activeRole?: string) => void;
@@ -32,6 +33,7 @@ interface EngineState {
   setFinal: (result: EngineFinal) => void;
   setError: (error: EngineError) => void;
   setMode: (mode: "mock" | "remote") => void;
+  appendDelta: (role: string, delta: string) => void;
   reset: () => void;
 }
 
@@ -45,6 +47,7 @@ const initialState = {
   lastFinal: null as EngineFinal | null,
   lastError: null as EngineError | null,
   lastDurationMs: 0,
+  streamingTexts: {} as Record<string, string>,
 };
 
 export const useEngineStore = create<EngineState>((set) => ({
@@ -58,5 +61,12 @@ export const useEngineStore = create<EngineState>((set) => ({
     set({ lastFinal: result, lastDurationMs: result.metrics.durationMs }),
   setError: (error) => set({ lastError: error, phase: "error" }),
   setMode: (mode) => set({ mode }),
+  appendDelta: (role, delta) =>
+    set((state) => ({
+      streamingTexts: {
+        ...state.streamingTexts,
+        [role]: (state.streamingTexts[role] ?? "") + delta,
+      },
+    })),
   reset: () => set(initialState),
 }));

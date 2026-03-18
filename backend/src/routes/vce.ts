@@ -12,6 +12,7 @@ import { db } from "../prisma";
 import { selectBestProvider } from "../lib/ai-utils";
 import { PRESET_TIER_MAP, getRecommendedModel, isValidModelId } from "../lib/model-catalog";
 import type { ModelTier } from "../lib/model-catalog";
+import { parseCodegenResponse, applyFileChanges } from "../lib/vce-codegen";
 import { VCERouter } from "../lib/vce-router";
 import { TaskRuntime } from "../lib/vce-runtime";
 import { Fusion } from "../lib/vce-fusion";
@@ -672,6 +673,34 @@ vceHonoRouter.post(
 
             const metrics = costTracker.getMetrics();
 
+            // ============ Codegen file changes (when projectId provided) ============
+            let fileChanges: { created: number; updated: number; deleted: number; changedFiles: string[] } | undefined;
+
+            if (projectId) {
+              try {
+                const parsedResult = parseCodegenResponse(fusionOutput.finalText);
+                if (parsedResult) {
+                  const stats = await applyFileChanges(projectId, parsedResult.files, db);
+                  const changedFiles = parsedResult.files.map((f) => f.path);
+                  fileChanges = { ...stats, changedFiles };
+
+                  // Save user message + assistant response as GenerationMessage records
+                  await db.generationMessage.createMany({
+                    data: [
+                      { projectId, role: "user", content: message },
+                      {
+                        projectId,
+                        role: "assistant",
+                        content: parsedResult.explanation || fusionOutput.finalText,
+                      },
+                    ],
+                  });
+                }
+              } catch {
+                // Silently skip file changes if parsing or applying fails
+              }
+            }
+
             send("final", {
               turnId,
               finalText: fusionOutput.finalText,
@@ -680,6 +709,7 @@ vceHonoRouter.post(
               roles: Array.from(taskResults.keys()),
               mode: routeDecision.mode,
               intent: routeDecision.intent,
+              ...(fileChanges ? { fileChanges } : {}),
               metrics: {
                 inputTokensUsed: metrics.inputTokensUsed,
                 outputTokensUsed: metrics.outputTokensUsed,

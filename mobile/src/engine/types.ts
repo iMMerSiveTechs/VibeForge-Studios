@@ -92,6 +92,7 @@ export interface EngineOptions {
     critic?: string;
     reasoner?: string;
   };
+  projectId?: string;
 }
 
 /** The engine adapter interface -- MockEngine and RemoteEngine both implement this */

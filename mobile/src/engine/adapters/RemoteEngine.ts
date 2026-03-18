@@ -103,6 +103,7 @@ export class RemoteEngine implements EngineAdapter {
           message,
           ...(options?.preset ? { preset: options.preset } : {}),
           ...(options?.overrides ? { overrides: options.overrides } : {}),
+          ...(options?.projectId ? { projectId: options.projectId } : {}),
         }),
       });
 
