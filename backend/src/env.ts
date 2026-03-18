@@ -7,7 +7,7 @@ import { z } from "zod";
 const envSchema = z.object({
   // Server Configuration
   PORT: z.string().optional().default("3000"),
-  NODE_ENV: z.string().optional(),
+  NODE_ENV: z.string().default("production"),
 
   // Database
   DATABASE_URL: z.string().default("file:./dev.db"),
@@ -51,13 +51,3 @@ export const env = validateEnv();
  */
 export type Env = z.infer<typeof envSchema>;
 
-/**
- * Extend process.env with our environment variables
- */
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace NodeJS {
-    // eslint-disable-next-line import/namespace
-    interface ProcessEnv extends z.infer<typeof envSchema> {}
-  }
-}

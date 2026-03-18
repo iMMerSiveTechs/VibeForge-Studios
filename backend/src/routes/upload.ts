@@ -8,6 +8,13 @@ import {
   CODE_ANALYSIS_SYSTEM_PROMPT,
 } from "../lib/ai-utils";
 
+// Size guard constants
+const MAX_UPLOAD_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_ZIP_ENTRIES = 100;
+const MAX_ZIP_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
+const MAX_ZIP_TOTAL_SIZE = 100 * 1024 * 1024; // 100MB total decompressed
+const ZIP_TIMEOUT_MS = 30_000; // 30s timeout for zip extraction
+
 const uploadRouter = new Hono<{
   Variables: {
     user: typeof auth.$Infer.Session.user | null;
@@ -51,6 +58,14 @@ uploadRouter.post("/:id/upload-zip", async (c) => {
     );
   }
 
+  // Size guard: reject files larger than 50MB
+  if (file.size > MAX_UPLOAD_SIZE) {
+    return c.json(
+      { error: { message: "File exceeds 50MB limit", code: "PAYLOAD_TOO_LARGE" } },
+      413
+    );
+  }
+
   // Validate it's a zip
   if (
     !file.name.endsWith(".zip") &&
@@ -73,6 +88,18 @@ uploadRouter.post("/:id/upload-zip", async (c) => {
     const arrayBuffer = await file.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
 
+    // Count entries and enforce max entries limit
+    let entryCount = 0;
+    zip.forEach((relativePath, zipEntry) => {
+      if (!zipEntry.dir) entryCount++;
+    });
+    if (entryCount > MAX_ZIP_ENTRIES) {
+      return c.json(
+        { error: { message: `Zip contains too many files (${entryCount}). Maximum is ${MAX_ZIP_ENTRIES}.`, code: "ZIP_TOO_MANY_ENTRIES" } },
+        400
+      );
+    }
+
     const extractedFiles: Array<{ path: string; content: string }> = [];
     const artifacts: Array<{
       kind: string;
@@ -80,8 +107,9 @@ uploadRouter.post("/:id/upload-zip", async (c) => {
       filePath: string;
     }> = [];
     let vfAppSpec: string | null = null;
+    let totalDecompressedBytes = 0;
 
-    // Process each file in the zip
+    // Process each file in the zip with a timeout
     const filePromises: Promise<void>[] = [];
 
     zip.forEach((relativePath, zipEntry) => {
@@ -89,11 +117,30 @@ uploadRouter.post("/:id/upload-zip", async (c) => {
       if (zipEntry.dir) return;
       if (relativePath.startsWith("__MACOSX/")) return;
       if (relativePath.startsWith(".")) return;
+      // Path traversal protection
+      if (relativePath.includes("..") || relativePath.startsWith("/")) return;
 
       filePromises.push(
         zipEntry
           .async("text")
           .then((content) => {
+            const contentBytes = Buffer.byteLength(content, "utf8");
+
+            // Per-file size guard
+            if (contentBytes > MAX_ZIP_FILE_SIZE) {
+              extractedFiles.push({
+                path: relativePath,
+                content: `[File too large - ${zipEntry.name} (${(contentBytes / 1024 / 1024).toFixed(1)}MB)]`,
+              });
+              return;
+            }
+
+            // Track total decompressed size and bail if exceeded
+            totalDecompressedBytes += contentBytes;
+            if (totalDecompressedBytes > MAX_ZIP_TOTAL_SIZE) {
+              throw new Error("ZIP_TOTAL_SIZE_EXCEEDED");
+            }
+
             const cleanPath = relativePath;
 
             extractedFiles.push({
@@ -135,7 +182,10 @@ uploadRouter.post("/:id/upload-zip", async (c) => {
               }
             }
           })
-          .catch(() => {
+          .catch((err) => {
+            if (err instanceof Error && err.message === "ZIP_TOTAL_SIZE_EXCEEDED") {
+              throw err;
+            }
             // Binary file or read error - skip it but note it
             extractedFiles.push({
               path: relativePath,
@@ -145,7 +195,28 @@ uploadRouter.post("/:id/upload-zip", async (c) => {
       );
     });
 
-    await Promise.all(filePromises);
+    // Enforce 30s timeout for zip extraction
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("ZIP_EXTRACTION_TIMEOUT")), ZIP_TIMEOUT_MS)
+    );
+
+    try {
+      await Promise.race([Promise.all(filePromises), timeoutPromise]);
+    } catch (err) {
+      if (err instanceof Error && err.message === "ZIP_EXTRACTION_TIMEOUT") {
+        return c.json(
+          { error: { message: "Zip extraction timed out", code: "ZIP_EXTRACTION_TIMEOUT" } },
+          408
+        );
+      }
+      if (err instanceof Error && err.message === "ZIP_TOTAL_SIZE_EXCEEDED") {
+        return c.json(
+          { error: { message: "Zip decompressed size exceeds 100MB limit", code: "ZIP_TOTAL_SIZE_EXCEEDED" } },
+          400
+        );
+      }
+      throw err;
+    }
 
     // Sort files by path for consistent ordering
     extractedFiles.sort((a, b) => a.path.localeCompare(b.path));

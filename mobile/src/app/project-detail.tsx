@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,8 @@ import {
   Upload,
   Sparkles,
   Code2,
+  Rocket,
+  Crown,
 } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { api } from "@/lib/api/api";
@@ -97,15 +99,19 @@ export default function ProjectDetailScreen() {
   });
 
   // Sync notes from project once loaded
-  if (project && !notesLoaded) {
-    setNotes(project.notes ?? "");
-    setNotesLoaded(true);
-  }
+  useEffect(() => {
+    if (project && !notesLoaded) {
+      setNotes(project.notes ?? "");
+      setNotesLoaded(true);
+    }
+  }, [project, notesLoaded]);
 
   // Update notes mutation
   const { mutate: updateNotes } = useMutation({
-    mutationFn: (newNotes: string) =>
-      api.put<Project>(`/api/projects/${id}`, { notes: newNotes }),
+    mutationFn: (newNotes: string) => {
+      if (!id) throw new Error("No project ID");
+      return api.put<Project>(`/api/projects/${id}`, { notes: newNotes });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       showToast("Notes saved");
@@ -117,7 +123,10 @@ export default function ProjectDetailScreen() {
 
   // Delete mutation
   const { mutate: deleteProject, isPending: isDeleting } = useMutation({
-    mutationFn: () => api.delete<void>(`/api/projects/${id}`),
+    mutationFn: () => {
+      if (!id) throw new Error("No project ID");
+      return api.delete<void>(`/api/projects/${id}`);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       showToast("Project deleted");
@@ -257,6 +266,8 @@ export default function ProjectDetailScreen() {
           onPress={() => router.back()}
           className="w-9 h-9 items-center justify-center rounded-lg bg-vf-s2 mr-3"
           hitSlop={8}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <ArrowLeft size={18} color={C.text} />
         </Pressable>
@@ -446,6 +457,9 @@ export default function ProjectDetailScreen() {
             />
           </View>
         </View>
+        {/* Build & Ship Section */}
+        <BuildShipSection projectId={id ?? ""} router={router} />
+
         <View className="mt-3">
           <Button
             label="Delete Project"
@@ -494,6 +508,144 @@ export default function ProjectDetailScreen() {
 }
 
 // --- Run Row for project detail ---
+
+// --- Build & Ship Section ---
+function BuildShipSection({ projectId, router }: { projectId: string; router: ReturnType<typeof useRouter> }) {
+  const showToast = useToastStore((s) => s.show);
+  const [selectedPlatform, setSelectedPlatform] = useState<"ios" | "android">("ios");
+  const [selectedProfile, setSelectedProfile] = useState<"development" | "preview" | "production">("preview");
+
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: () => api.get<{ subscription: { plan: string }; usage: unknown; plan: string }>("/api/subscriptions/me"),
+  });
+
+  const { data: builds } = useQuery({
+    queryKey: ["builds", projectId],
+    queryFn: () => api.get<Array<{ id: string; platform: string; profile: string; status: string; createdAt: string }>>(`/api/builds/${projectId}`),
+    enabled: !!projectId,
+  });
+
+  const { mutate: triggerBuild, isPending: isTriggering } = useMutation({
+    mutationFn: () => api.post<{ id: string }>(`/api/builds/${projectId}`, { platform: selectedPlatform, profile: selectedProfile }),
+    onSuccess: (data) => {
+      showToast("Build started!");
+      if (data?.id) {
+        router.push({ pathname: "/build-status", params: { projectId, buildId: data.id } });
+      }
+    },
+    onError: (err) => {
+      showToast(err instanceof Error ? err.message : "Failed to start build");
+    },
+  });
+
+  const plan = subscription?.plan ?? "FREE";
+  const isFree = plan === "FREE";
+  const latestBuild = builds?.[0];
+
+  return (
+    <View className="mb-5">
+      <View className="flex-row items-center mb-2">
+        <Rocket size={14} color={C.mg} />
+        <Text
+          className="text-vf-magenta text-xs uppercase tracking-widest ml-2"
+          style={{ fontFamily: "monospace" }}
+        >
+          Build & Ship
+        </Text>
+      </View>
+
+      {isFree ? (
+        <Box accentColor={C.warn}>
+          <View className="flex-row items-center mb-1.5" style={{ gap: 6 }}>
+            <Crown size={14} color={C.warn} />
+            <Text style={{ color: C.warn, fontSize: 12, fontFamily: "monospace", fontWeight: "600" }}>
+              Pro Required
+            </Text>
+          </View>
+          <Text style={{ color: C.dim, fontSize: 11, fontFamily: "monospace", lineHeight: 16 }}>
+            Upgrade to Pro to build and submit your app to the App Store.
+          </Text>
+        </Box>
+      ) : (
+        <>
+          {/* Platform selector */}
+          <View className="flex-row mb-2" style={{ gap: 6 }}>
+            {(["ios", "android"] as const).map((p) => (
+              <Pressable
+                key={p}
+                onPress={() => setSelectedPlatform(p)}
+                className="flex-1 py-2 rounded-lg border items-center"
+                style={{
+                  borderColor: selectedPlatform === p ? C.mg : C.b1,
+                  backgroundColor: selectedPlatform === p ? C.mg + "15" : C.s1,
+                }}
+              >
+                <Text style={{
+                  color: selectedPlatform === p ? C.mg : C.dim,
+                  fontSize: 12, fontFamily: "monospace", fontWeight: "600",
+                }}>
+                  {p === "ios" ? "iOS" : "Android"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Profile selector */}
+          <View className="flex-row mb-3" style={{ gap: 6 }}>
+            {(["development", "preview", "production"] as const).map((p) => (
+              <Pressable
+                key={p}
+                onPress={() => setSelectedProfile(p)}
+                className="flex-1 py-1.5 rounded-lg border items-center"
+                style={{
+                  borderColor: selectedProfile === p ? C.cy : C.b1,
+                  backgroundColor: selectedProfile === p ? C.cy + "15" : C.s1,
+                }}
+              >
+                <Text style={{
+                  color: selectedProfile === p ? C.cy : C.dim,
+                  fontSize: 10, fontFamily: "monospace",
+                }}>
+                  {p === "development" ? "Simulator" : p === "preview" ? "TestFlight" : "App Store"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Button
+            label={isTriggering ? "STARTING BUILD..." : "BUILD & SHIP"}
+            onPress={() => triggerBuild()}
+            variant="secondary"
+            icon={<Rocket size={16} color={C.mg} />}
+            loading={isTriggering}
+          />
+
+          {/* Latest build status */}
+          {latestBuild ? (
+            <Pressable
+              onPress={() => router.push({ pathname: "/build-status", params: { projectId, buildId: latestBuild.id } })}
+              className="mt-2 p-3 rounded-lg border"
+              style={{ borderColor: C.b1, backgroundColor: C.s1 }}
+            >
+              <View className="flex-row items-center justify-between">
+                <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>
+                  Latest: {latestBuild.platform} · {latestBuild.profile}
+                </Text>
+                <Text style={{
+                  color: latestBuild.status === "SUCCESS" ? C.green : latestBuild.status === "FAILED" ? C.red : C.warn,
+                  fontSize: 10, fontFamily: "monospace", fontWeight: "600",
+                }}>
+                  {latestBuild.status}
+                </Text>
+              </View>
+            </Pressable>
+          ) : null}
+        </>
+      )}
+    </View>
+  );
+}
 
 function RunRow({ run }: { run: Run }) {
   const provider = getProviderInfo(run.inputModel);

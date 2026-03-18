@@ -21,6 +21,10 @@ model User {
   projects      Project[]
   assets        Asset[]
   settings      Setting[]
+  feedbacks     Feedback[]
+  subscription  Subscription?
+  usageRecords  UsageRecord[]
+  builds        Build[]
 }
 
 model Session {
@@ -76,7 +80,18 @@ model Project {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  runs         Run[]
+  runs                Run[]
+  builds              Build[]
+  generationMessages  GenerationMessage[]
+}
+
+model GenerationMessage {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      String   // "user" or "assistant"
+  content   String
+  createdAt DateTime @default(now())
 }
 
 model Run {
@@ -123,4 +138,60 @@ model Asset {
   sizeBytes   Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Feedback {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   @default("feature")
+  subject     String
+  description String
+  createdAt   DateTime @default(now())
+}
+
+// Subscription & Monetization
+model Subscription {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revenuecatId     String?
+  plan             String    @default("FREE")
+  status           String    @default("ACTIVE")
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model UsageRecord {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            String
+  tokensUsed      Int      @default(0)
+  requestCount    Int      @default(0)
+  imagesGenerated Int      @default(0)
+  audioMinutes    Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+// EAS Build tracking
+model Build {
+  id          String    @id @default(uuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String
+  profile     String
+  status      String    @default("QUEUED")
+  easBuildId  String?
+  artifactUrl String?
+  logsUrl     String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

@@ -23,8 +23,24 @@ const vceRouter = new VCERouter();
 const runtime = new TaskRuntime();
 const fusion = new Fusion();
 
-// Map of turnId -> AbortController for interrupt support
-const activeTurns = new Map<string, AbortController>();
+// Map of turnId -> { controller, userId, createdAt } for interrupt support
+interface ActiveTurn {
+  controller: AbortController;
+  userId: string;
+  createdAt: number;
+}
+const activeTurns = new Map<string, ActiveTurn>();
+
+// TTL cleanup: remove stale turns older than 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [turnId, turn] of activeTurns) {
+    if (now - turn.createdAt > 10 * 60 * 1000) {
+      turn.controller.abort();
+      activeTurns.delete(turnId);
+    }
+  }
+}, 60_000);
 
 // ============ Hono app ============
 const vceHonoRouter = new Hono<{
@@ -342,7 +358,7 @@ vceHonoRouter.post(
 
     const turnId = randomUUID();
     const turnAbortController = new AbortController();
-    activeTurns.set(turnId, turnAbortController);
+    activeTurns.set(turnId, { controller: turnAbortController, userId: user.id, createdAt: Date.now() });
 
     // Route the request (deterministic, no LLM)
     const routeDecision: RouterDecision = vceRouter.route(message);
@@ -708,13 +724,13 @@ vceHonoRouter.post("/interrupt/:turnId", async (c) => {
   }
 
   const { turnId } = c.req.param();
-  const controller = activeTurns.get(turnId);
+  const turn = activeTurns.get(turnId);
 
-  if (!controller) {
+  if (!turn || turn.userId !== user.id) {
     return c.json({ data: { status: "not_found", turnId } });
   }
 
-  controller.abort();
+  turn.controller.abort();
   activeTurns.delete(turnId);
   runtime.cancelTurn(turnId);
 
@@ -728,13 +744,18 @@ vceHonoRouter.get("/turns", async (c) => {
     return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
   }
 
-  // No Turn model in DB schema — return in-memory active turns
-  const activeTurnIds = Array.from(activeTurns.keys());
+  // Only return this user's active turns
+  const userTurnIds: string[] = [];
+  for (const [turnId, turn] of activeTurns) {
+    if (turn.userId === user.id) {
+      userTurnIds.push(turnId);
+    }
+  }
 
   return c.json({
     data: {
-      active: activeTurnIds,
-      count: activeTurnIds.length,
+      active: userTurnIds,
+      count: userTurnIds.length,
     },
   });
 });

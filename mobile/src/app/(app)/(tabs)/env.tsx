@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -32,8 +32,8 @@ interface EnvVar {
 
 function maskValue(value: string): string {
   if (!value || value.length === 0) return "";
-  if (value.length <= 8) return value.slice(0, 2) + "***";
-  return value.slice(0, 8) + "..." + value.slice(-3).replace(/./g, "*");
+  if (value.length <= 4) return "****";
+  return value.slice(0, 2) + "*".repeat(Math.min(value.length - 2, 20));
 }
 
 export default function EnvTab() {
@@ -50,23 +50,34 @@ export default function EnvTab() {
   });
 
   // Extract env vars from settings
-  const envVars: EnvVar[] = settings
-    ? Object.entries(settings)
-        .filter(([key]) => key.startsWith(ENV_PREFIX))
-        .map(([key, value]) => ({
-          key,
-          rawKey: key.slice(ENV_PREFIX.length),
-          value,
-        }))
-    : [];
+  const envVars: EnvVar[] = useMemo(
+    () =>
+      settings
+        ? Object.entries(settings)
+            .filter(([key]) => key.startsWith(ENV_PREFIX))
+            .map(([key, value]) => ({
+              key,
+              rawKey: key.slice(ENV_PREFIX.length),
+              value,
+            }))
+        : [],
+    [settings]
+  );
+
+  const pendingToastRef = React.useRef<string>("");
 
   const { mutate: saveSettings, isPending: isSaving } = useMutation({
     mutationFn: (data: SettingsMap) =>
       api.put<SettingsMap>("/api/settings", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
+      if (pendingToastRef.current) {
+        showToast(pendingToastRef.current);
+        pendingToastRef.current = "";
+      }
     },
     onError: () => {
+      pendingToastRef.current = "";
       showToast("Failed to save");
     },
   });
@@ -89,18 +100,18 @@ export default function EnvTab() {
       [fullKey]: newValue.trim(),
     };
 
+    pendingToastRef.current = `${sanitizedKey} added`;
     saveSettings(updated);
     setNewKey("");
     setNewValue("");
     setIsAdding(false);
-    showToast(`${sanitizedKey} added`);
   };
 
   const handleDelete = (key: string, rawKey: string) => {
     const updated: SettingsMap = { ...(settings ?? {}) };
     delete updated[key];
+    pendingToastRef.current = `${rawKey} removed`;
     saveSettings(updated);
-    showToast(`${rawKey} removed`);
   };
 
   const toggleShowValue = (key: string) => {
@@ -155,6 +166,8 @@ export default function EnvTab() {
             </View>
             <Pressable
               onPress={() => setIsAdding((v) => !v)}
+              accessibilityLabel={isAdding ? 'Cancel adding' : 'Add variable'}
+              accessibilityRole="button"
               style={({ pressed }) => ({
                 flexDirection: "row",
                 alignItems: "center",
@@ -255,6 +268,7 @@ export default function EnvTab() {
                   placeholder="MY_API_KEY"
                   placeholderTextColor={C.dim}
                   autoCapitalize="characters"
+                  accessibilityLabel="Variable name"
                   style={{
                     backgroundColor: C.bg,
                     borderWidth: 1,
@@ -288,6 +302,7 @@ export default function EnvTab() {
                   placeholder="Enter value..."
                   placeholderTextColor={C.dim}
                   secureTextEntry
+                  accessibilityLabel="Variable value"
                   style={{
                     backgroundColor: C.bg,
                     borderWidth: 1,
@@ -433,6 +448,8 @@ export default function EnvTab() {
                       >
                         <Pressable
                           onPress={() => toggleShowValue(envVar.key)}
+                          accessibilityLabel={`${visible ? 'Hide' : 'Show'} ${envVar.rawKey} value`}
+                          accessibilityRole="button"
                           style={({ pressed }) => ({
                             width: 28,
                             height: 28,
@@ -455,6 +472,8 @@ export default function EnvTab() {
                           onPress={() =>
                             handleDelete(envVar.key, envVar.rawKey)
                           }
+                          accessibilityLabel={`Delete ${envVar.rawKey}`}
+                          accessibilityRole="button"
                           style={({ pressed }) => ({
                             width: 28,
                             height: 28,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,46 +7,45 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MessageSquarePlus,
   Bug,
   Lightbulb,
   HelpCircle,
   MoreHorizontal,
-  CheckCircle,
   Clock,
   Send,
+  Trash2,
 } from "lucide-react-native";
 import { C } from "@/theme/colors";
 import { useToastStore } from "@/lib/state/toast-store";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/Button";
-
-const STORAGE_KEY = "vf_requests";
+import { api } from "@/lib/api/api";
 
 type RequestType = "bug" | "feature" | "question" | "other";
 
-interface RequestEntry {
+interface FeedbackEntry {
   id: string;
   type: RequestType;
   subject: string;
   description: string;
-  submittedAt: string;
+  createdAt: string;
 }
 
 const REQUEST_TYPES: {
   type: RequestType;
   label: string;
-  icon: React.ReactNode;
   color: string;
 }[] = [
-  { type: "bug", label: "Bug Report", icon: null, color: C.red },
-  { type: "feature", label: "Feature Request", icon: null, color: C.cy },
-  { type: "question", label: "Question", icon: null, color: C.warn },
-  { type: "other", label: "Other", icon: null, color: C.mid },
+  { type: "bug", label: "Bug Report", color: C.red },
+  { type: "feature", label: "Feature Request", color: C.cy },
+  { type: "question", label: "Question", color: C.warn },
+  { type: "other", label: "Other", color: C.mid },
 ];
 
 function typeIcon(type: RequestType, size: number, color: string) {
@@ -85,27 +84,47 @@ export default function RequestTab() {
   const [selectedType, setSelectedType] = useState<RequestType>("feature");
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [requests, setRequests] = useState<RequestEntry[]>([]);
   const showToast = useToastStore((s) => s.show);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadRequests();
-  }, []);
+  // Fetch feedback from backend
+  const { data: requests, isLoading } = useQuery({
+    queryKey: ["feedback"],
+    queryFn: () => api.get<FeedbackEntry[]>("/api/feedback"),
+  });
 
-  const loadRequests = async () => {
-    try {
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as RequestEntry[];
-        setRequests(parsed);
-      }
-    } catch {
-      // ignore
-    }
-  };
+  // Submit feedback
+  const { mutate: submitFeedback, isPending: isSubmitting } = useMutation({
+    mutationFn: (data: {
+      type: RequestType;
+      subject: string;
+      description: string;
+    }) => api.post<FeedbackEntry>("/api/feedback", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feedback"] });
+      setSubject("");
+      setDescription("");
+      setSelectedType("feature");
+      showToast("Request submitted!");
+    },
+    onError: (err) => {
+      showToast(
+        err instanceof Error ? err.message : "Failed to submit request"
+      );
+    },
+  });
 
-  const handleSubmit = async () => {
+  // Delete feedback
+  const { mutate: deleteFeedback } = useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/api/feedback/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feedback"] });
+      showToast("Request removed");
+    },
+    onError: () => showToast("Failed to delete"),
+  });
+
+  const handleSubmit = () => {
     if (!subject.trim()) {
       showToast("Please enter a subject");
       return;
@@ -114,31 +133,14 @@ export default function RequestTab() {
       showToast("Please enter a description");
       return;
     }
-
-    setIsSubmitting(true);
-    try {
-      const newRequest: RequestEntry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        type: selectedType,
-        subject: subject.trim(),
-        description: description.trim(),
-        submittedAt: new Date().toISOString(),
-      };
-
-      const updated = [newRequest, ...requests];
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      setRequests(updated);
-
-      setSubject("");
-      setDescription("");
-      setSelectedType("feature");
-      showToast("Request submitted!");
-    } catch {
-      showToast("Failed to submit request");
-    } finally {
-      setIsSubmitting(false);
-    }
+    submitFeedback({
+      type: selectedType,
+      subject: subject.trim(),
+      description: description.trim(),
+    });
   };
+
+  const feedbackList = requests ?? [];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
@@ -148,8 +150,20 @@ export default function RequestTab() {
         keyboardVerticalOffset={0}
       >
         {/* Header */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 12,
+            paddingBottom: 16,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 4,
+            }}
+          >
             <View
               style={{
                 width: 32,
@@ -201,7 +215,10 @@ export default function RequestTab() {
         </View>
 
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 40,
+          }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Form */}
@@ -255,8 +272,8 @@ export default function RequestTab() {
                         backgroundColor: isActive
                           ? rt.color + "25"
                           : pressed
-                          ? C.b2
-                          : C.bg,
+                            ? C.b2
+                            : C.bg,
                         borderWidth: 1,
                         borderColor: isActive ? rt.color + "80" : C.b2,
                       })}
@@ -370,7 +387,16 @@ export default function RequestTab() {
             Recent Requests
           </Text>
 
-          {requests.length === 0 ? (
+          {isLoading ? (
+            <View
+              style={{
+                alignItems: "center",
+                paddingVertical: 28,
+              }}
+            >
+              <ActivityIndicator size="small" color={C.cy} />
+            </View>
+          ) : feedbackList.length === 0 ? (
             <View
               style={{
                 alignItems: "center",
@@ -381,7 +407,11 @@ export default function RequestTab() {
                 borderColor: C.b1,
               }}
             >
-              <Clock size={24} color={C.dim} style={{ marginBottom: 10 }} />
+              <Clock
+                size={24}
+                color={C.dim}
+                style={{ marginBottom: 10 }}
+              />
               <Text
                 style={{
                   color: C.dim,
@@ -394,7 +424,7 @@ export default function RequestTab() {
               </Text>
             </View>
           ) : (
-            requests.map((req) => {
+            feedbackList.map((req) => {
               const col = typeColor(req.type);
               return (
                 <View
@@ -439,8 +469,14 @@ export default function RequestTab() {
                         fontFamily: "monospace",
                       }}
                     >
-                      {formatDate(req.submittedAt)}
+                      {formatDate(req.createdAt)}
                     </Text>
+                    <Pressable
+                      onPress={() => deleteFeedback(req.id)}
+                      hitSlop={8}
+                    >
+                      <Trash2 size={12} color={C.dim} />
+                    </Pressable>
                   </View>
 
                   <Text

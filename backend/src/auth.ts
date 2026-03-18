@@ -36,8 +36,10 @@ export const auth = betterAuth({
       disableSignUp: false,
 
       async sendVerificationOTP({ email, otp, type }) {
-        // Log OTP for debugging (remove in production)
-        console.log(`[OTP DEBUG] Sending OTP for ${email}:`, { otp, type });
+        // Only log OTP in development
+        if (env.NODE_ENV !== "production") {
+          console.log(`[OTP DEBUG] Sending OTP for ${email}:`, { otp, type });
+        }
 
         // Send OTP via Vibecode SMTP service (no auth required)
         const response = await fetch("https://smtp.vibecodeapp.com/v1/send/otp", {
@@ -57,7 +59,9 @@ export const auth = betterAuth({
           throw new Error(data?.error || `Failed to send OTP (HTTP ${response.status})`);
         }
 
-        console.log(`[OTP DEBUG] OTP sent successfully to ${email}`);
+        if (env.NODE_ENV !== "production") {
+          console.log(`[OTP DEBUG] OTP sent successfully to ${email}`);
+        }
       },
     }),
   ],

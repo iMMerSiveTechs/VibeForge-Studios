@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Copy, Check, ChevronRight } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
@@ -20,6 +20,15 @@ export function FileTree({ files, projectName }: FileTreeProps) {
   const [activeId, setActiveId] = useState<string>(files[0]?.id ?? "");
   const [copied, setCopied] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyAllTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      if (copyAllTimerRef.current) clearTimeout(copyAllTimerRef.current);
+    };
+  }, []);
 
   const activeFile = files.find((f) => f.id === activeId);
   const lines = activeFile?.content.split("\n") ?? [];
@@ -28,7 +37,8 @@ export function FileTree({ files, projectName }: FileTreeProps) {
     if (!activeFile) return;
     await Clipboard.setStringAsync(activeFile.content);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   const handleCopyAll = async () => {
@@ -37,7 +47,8 @@ export function FileTree({ files, projectName }: FileTreeProps) {
       .join("\n\n");
     await Clipboard.setStringAsync(allContent);
     setCopiedAll(true);
-    setTimeout(() => setCopiedAll(false), 2000);
+    if (copyAllTimerRef.current) clearTimeout(copyAllTimerRef.current);
+    copyAllTimerRef.current = setTimeout(() => setCopiedAll(false), 2000);
   };
 
   const getFilename = (path: string) => {
@@ -72,6 +83,8 @@ export function FileTree({ files, projectName }: FileTreeProps) {
             <Pressable
               key={file.id}
               onPress={() => setActiveId(file.id)}
+              accessibilityLabel={getFilename(file.path)}
+              accessibilityRole="tab"
               className={cn(
                 "px-3 py-2",
                 activeId === file.id
@@ -97,6 +110,8 @@ export function FileTree({ files, projectName }: FileTreeProps) {
       <View className="flex-row justify-end px-3 py-1.5 space-x-2 border-b border-vf-b1">
         <Pressable
           onPress={handleCopy}
+          accessibilityLabel="Copy file"
+          accessibilityRole="button"
           className="flex-row items-center px-2 py-1 rounded bg-vf-s2 mr-2"
         >
           {copied ? (
@@ -113,6 +128,8 @@ export function FileTree({ files, projectName }: FileTreeProps) {
         </Pressable>
         <Pressable
           onPress={handleCopyAll}
+          accessibilityLabel="Copy all files"
+          accessibilityRole="button"
           className="flex-row items-center px-2 py-1 rounded bg-vf-s2"
         >
           {copiedAll ? (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Copy, Check } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
@@ -12,12 +12,20 @@ interface CodeViewerProps {
 
 export function CodeViewer({ code, filename, language }: CodeViewerProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lines = code.split("\n");
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(code);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -46,6 +54,8 @@ export function CodeViewer({ code, filename, language }: CodeViewerProps) {
           onPress={handleCopy}
           className="w-7 h-7 items-center justify-center rounded-md bg-vf-s2"
           hitSlop={8}
+          accessibilityLabel="Copy code"
+          accessibilityRole="button"
         >
           {copied ? (
             <Check size={14} color={C.green} />

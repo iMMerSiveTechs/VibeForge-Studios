@@ -14,7 +14,12 @@ import { aiRouter } from "./routes/ai";
 import { devRouter } from "./routes/dev";
 import { vceHonoRouter } from "./routes/vce";
 import { modelsRouter } from "./routes/models";
+import { feedbackRouter } from "./routes/feedback";
+import { subscriptionsRouter } from "./routes/subscriptions";
+import { buildsRouter } from "./routes/builds";
+import { codegenRouter } from "./routes/codegen";
 import { logger } from "hono/logger";
+import { rateLimit, getClientIP, getUserId } from "./middleware/rate-limit";
 
 // Type the Hono app with user/session variables
 const app = new Hono<{
@@ -60,6 +65,12 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+// Apply rate limits (after auth middleware so user is available)
+app.use("/api/auth/*", rateLimit({ windowMs: 60_000, max: 10, keyFn: getClientIP }));
+app.use("/api/ai/*", rateLimit({ windowMs: 60_000, max: 20, keyFn: getUserId }));
+app.use("/api/vce/*", rateLimit({ windowMs: 60_000, max: 10, keyFn: getUserId }));
+app.use("/api/generate/*", rateLimit({ windowMs: 60_000, max: 5, keyFn: getUserId }));
+
 // Mount auth handler
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
@@ -100,6 +111,10 @@ app.route("/api/files", filesRouter);
 app.route("/api/ai", aiRouter);
 app.route("/api/dev", devRouter);
 app.route("/api/vce", vceHonoRouter);
+app.route("/api/feedback", feedbackRouter);
+app.route("/api/subscriptions", subscriptionsRouter);
+app.route("/api/builds", buildsRouter);
+app.route("/api/codegen", codegenRouter);
 
 // Mount upload endpoint directly
 app.post("/api/upload", async (c) => {

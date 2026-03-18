@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Zap, Plus, Trash2, ChevronRight, Upload } from "lucide-react-native";
+import { Zap, Plus, Trash2, ChevronRight, Upload, Search, X } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { api } from "@/lib/api/api";
 import { C } from "@/theme/colors";
@@ -47,7 +48,7 @@ function getStatusColor(status: string): string {
   }
 }
 
-function ProjectCard({
+const ProjectCard = React.memo(function ProjectCard({
   project,
   onDelete,
   onTap,
@@ -95,6 +96,8 @@ function ProjectCard({
             disabled={isDeleting}
             className="w-9 h-9 items-center justify-center rounded-lg bg-vf-s2 active:opacity-60"
             hitSlop={4}
+            accessibilityLabel="Delete project"
+            accessibilityRole="button"
           >
             {isDeleting ? (
               <ActivityIndicator size="small" color={C.red} />
@@ -102,14 +105,14 @@ function ProjectCard({
               <Trash2 size={16} color={C.red} />
             )}
           </Pressable>
-          <View className="w-8 h-9 items-center justify-center">
+          <View className="w-8 h-9 items-center justify-center" accessibilityLabel="Open project">
             <ChevronRight size={16} color={C.dim} />
           </View>
         </View>
       </View>
     </Box>
   );
-}
+});
 
 export default function ProjectsScreen() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -119,6 +122,7 @@ export default function ProjectsScreen() {
   const [zipProjectName, setZipProjectName] = useState("");
   const [zipTargetProject, setZipTargetProject] = useState<Project | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -134,6 +138,17 @@ export default function ProjectsScreen() {
     queryKey: ["projects"],
     queryFn: () => api.get<Project[]>("/api/projects"),
   });
+
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    if (!searchQuery.trim()) return projects;
+    const q = searchQuery.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.bundleId.toLowerCase().includes(q)
+    );
+  }, [projects, searchQuery]);
 
   const { mutate: createProject, isPending: isCreating } = useMutation({
     mutationFn: (name: string) =>
@@ -174,39 +189,26 @@ export default function ProjectsScreen() {
 
   const handleZipImport = useCallback(async () => {
     try {
-      console.log("[ZIP IMPORT] Starting import process...");
-
       // Step 1: Pick the zip file
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
         copyToCacheDirectory: true,
       });
 
-      console.log("[ZIP IMPORT] File picker result:", JSON.stringify(result, null, 2));
-
       if (result.canceled || !result.assets?.[0]) {
-        console.log("[ZIP IMPORT] User canceled or no file selected");
         return;
       }
 
       const file = result.assets[0];
-      console.log("[ZIP IMPORT] File selected:", {
-        name: file.name,
-        size: file.size,
-        uri: file.uri,
-        mimeType: file.mimeType,
-      });
 
       // Verify it's a zip
       if (!file.name?.endsWith(".zip")) {
-        console.log("[ZIP IMPORT] File validation failed: not a .zip file");
         showToast("Please select a .zip file");
         return;
       }
 
       // Verify we have a valid URI
       if (!file.uri || file.uri.trim() === "") {
-        console.log("[ZIP IMPORT] File validation failed: no valid URI");
         showToast("Invalid file URI");
         return;
       }
@@ -215,33 +217,24 @@ export default function ProjectsScreen() {
       let targetId: string | null = null;
 
       if (zipTargetProject) {
-        // Uploading to an existing project
         targetId = zipTargetProject.id;
-        console.log("[ZIP IMPORT] Using existing project:", targetId);
       } else if (zipProjectName.trim()) {
-        // Create a new project first
-        console.log("[ZIP IMPORT] Creating new project:", zipProjectName.trim());
         try {
           const newProject = await api.post<Project>("/api/projects", {
             name: zipProjectName.trim(),
           });
           targetId = newProject.id;
-          console.log("[ZIP IMPORT] New project created:", targetId);
-        } catch (createErr) {
-          console.error("[ZIP IMPORT] Failed to create project:", createErr);
+        } catch {
           showToast("Failed to create project");
           return;
         }
       } else {
-        console.log("[ZIP IMPORT] No target specified");
         showToast("Enter a project name or select existing");
         return;
       }
 
       setIsUploading(true);
       setZipDialogOpen(false);
-
-      console.log("[ZIP IMPORT] Starting upload to project:", targetId);
 
       // Step 3: Upload the zip file
       const formData = new FormData();
@@ -252,14 +245,10 @@ export default function ProjectsScreen() {
         type: file.mimeType ?? "application/zip",
       } as any);
 
-      console.log("[ZIP IMPORT] FormData prepared, uploading to:", `/api/projects/${targetId}/upload-zip`);
-
       const response = await api.upload<ZipUploadResponse>(
         `/api/projects/${targetId}/upload-zip`,
         formData
       );
-
-      console.log("[ZIP IMPORT] Upload successful:", JSON.stringify(response, null, 2));
 
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -279,19 +268,8 @@ export default function ProjectsScreen() {
       // Navigate to the project detail
       router.push({ pathname: "/project-detail", params: { id: targetId } });
     } catch (err) {
-      console.error("[ZIP IMPORT] Error occurred:", err);
-      console.error("[ZIP IMPORT] Error details:", {
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-        name: err instanceof Error ? err.name : undefined,
-      });
-
       const msg = err instanceof Error ? err.message : "Failed to import zip";
-      const detailedMsg = err instanceof Error && err.stack
-        ? `${msg}\n\nStack: ${err.stack.split('\n').slice(0, 3).join('\n')}`
-        : msg;
-
-      showToast(detailedMsg);
+      showToast(msg);
     } finally {
       setIsUploading(false);
       setZipProjectName("");
@@ -366,6 +344,43 @@ export default function ProjectsScreen() {
         />
       </View>
 
+      {/* Search bar */}
+      <View className="px-5 pb-3">
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: C.s1,
+            borderWidth: 1,
+            borderColor: C.b1,
+            borderRadius: 10,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Search size={14} color={C.dim} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search projects..."
+            placeholderTextColor={C.dim}
+            accessibilityLabel="Search projects"
+            style={{
+              flex: 1,
+              color: C.text,
+              fontSize: 13,
+              fontFamily: "monospace",
+              paddingVertical: 10,
+              paddingHorizontal: 8,
+            }}
+          />
+          {searchQuery.length > 0 ? (
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={8} accessibilityLabel="Clear search" accessibilityRole="button">
+              <X size={14} color={C.dim} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+
       {/* Action bar */}
       <View className="px-5 pb-3 flex-row" style={{ gap: 10 }}>
         <View className="flex-1">
@@ -402,10 +417,14 @@ export default function ProjectsScreen() {
         </View>
       ) : (
         <FlatList
-          data={projects ?? []}
+          data={filteredProjects}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}

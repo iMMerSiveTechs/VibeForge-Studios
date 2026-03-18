@@ -10,7 +10,10 @@ interface ApiResponse<T> {
   data: T;
 }
 
-const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL!;
+const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+if (!baseUrl) {
+  throw new Error("EXPO_PUBLIC_BACKEND_URL is not set");
+}
 
 interface ApiError {
   error: { message: string; code?: string };
@@ -62,57 +65,38 @@ const uploadFormData = async <T>(
   url: string,
   formData: FormData
 ): Promise<T> => {
-  try {
-    console.log("[Upload] Starting upload to:", `${baseUrl}${url}`);
+  // Use native fetch instead of expo/fetch due to FormData bug
+  const response = await nativeFetch(`${baseUrl}${url}`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+    headers: {
+      Cookie: authClient.getCookie(),
+    },
+  });
 
-    // Use native fetch instead of expo/fetch due to FormData bug
-    const response = await nativeFetch(`${baseUrl}${url}`, {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-      headers: {
-        Cookie: authClient.getCookie(),
-      },
-    });
-
-    console.log("[Upload] Response status:", response.status);
-    console.log("[Upload] Response headers:", {
-      contentType: response.headers.get("content-type"),
-      contentLength: response.headers.get("content-length"),
-    });
-
-    if (response.status === 204) {
-      return null as T;
-    }
-
-    const contentType = response.headers.get("content-type");
-    if (contentType?.includes("application/json")) {
-      const json = await response.json();
-      console.log("[Upload] Response JSON:", json);
-
-      // Handle error responses
-      if (!response.ok) {
-        const errorMsg = (json as ApiError)?.error?.message || `Upload failed with status ${response.status}`;
-        console.error("[Upload] Error:", errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      return (json as ApiResponse<T>).data ?? (null as T);
-    }
-
-    // Try to read response as text for debugging
-    const text = await response.text();
-    console.log("[Upload] Response text:", text);
-
-    if (!response.ok) {
-      throw new Error(`Upload failed with status ${response.status}: ${text}`);
-    }
-
+  if (response.status === 204) {
     return null as T;
-  } catch (err) {
-    console.error("[Upload] Fetch error:", err);
-    throw err;
   }
+
+  const contentType = response.headers.get("content-type");
+  if (contentType?.includes("application/json")) {
+    const json = await response.json();
+
+    // Handle error responses
+    if (!response.ok) {
+      const errorMsg = (json as ApiError)?.error?.message || `Upload failed with status ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    return (json as ApiResponse<T>).data ?? (null as T);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Upload failed with status ${response.status}`);
+  }
+
+  return null as T;
 };
 
 export const api = {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -22,7 +22,6 @@ import {
 } from "lucide-react-native";
 import { api } from "@/lib/api/api";
 import { C } from "@/theme/colors";
-import { useToastStore } from "@/lib/state/toast-store";
 import { Dialog } from "@/components/ui/Dialog";
 import { Tag } from "@/components/ui/Tag";
 import {
@@ -34,6 +33,8 @@ import {
 } from "@/lib/runs-utils";
 import type { Run } from "@/lib/types";
 
+const runKeyExtractor = (run: Run) => run.id;
+
 interface ActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -42,7 +43,6 @@ interface ActivityModalProps {
 export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
   const [search, setSearch] = useState("");
   const [selectedRun, setSelectedRun] = useState<Run | null>(null);
-  const showToast = useToastStore((s) => s.show);
 
   const { data: runs, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["runs"],
@@ -65,6 +65,75 @@ export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
   const totalCost = useMemo(
     () => (runs ?? []).reduce((sum, run) => sum + getRunCost(run), 0),
     [runs]
+  );
+
+  const renderRunItem = useCallback(
+    ({ item: run }: { item: Run }) => {
+      const provider = getProviderInfo(run.inputModel);
+      const statusColor = getStatusColor(run.status);
+      return (
+        <Pressable
+          onPress={() => setSelectedRun(run)}
+          accessibilityLabel={`${run.project?.name ?? 'Untitled'} run, ${provider.name}, ${run.status}`}
+          accessibilityRole="button"
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: C.b1,
+            gap: 10,
+          }}
+        >
+          <Circle size={8} color={statusColor} fill={statusColor} />
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                color: C.text,
+                fontFamily: "monospace",
+                fontSize: 12,
+                fontWeight: "600",
+              }}
+            >
+              {run.project?.name ?? "Untitled"}
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                marginTop: 4,
+              }}
+            >
+              <Tag label={provider.name} color={provider.color} />
+              <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>
+                {formatTime(run.createdAt)}
+              </Text>
+            </View>
+          </View>
+          <View style={{ alignItems: "flex-end", gap: 4 }}>
+            <Text
+              style={{
+                color: C.green,
+                fontFamily: "monospace",
+                fontSize: 10,
+                fontWeight: "700",
+              }}
+            >
+              {run.parseFileCount} files
+            </Text>
+            <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>
+              {formatTokens(
+                (run.usageInputTokens ?? 0) + (run.usageOutputTokens ?? 0)
+              )}{" "}
+              tokens
+            </Text>
+          </View>
+          <ChevronRight size={14} color={C.dim} />
+        </Pressable>
+      );
+    },
+    []
   );
 
   if (!isOpen) return null;
@@ -119,7 +188,7 @@ export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
               </View>
             ) : null}
           </View>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="Close activity" accessibilityRole="button">
             <X size={18} color={C.dim} />
           </Pressable>
         </View>
@@ -145,6 +214,7 @@ export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
               placeholderTextColor={C.dim}
               value={search}
               onChangeText={setSearch}
+              accessibilityLabel="Search runs"
               style={{
                 flex: 1,
                 color: C.text,
@@ -179,73 +249,15 @@ export function ActivityModal({ isOpen, onClose }: ActivityModalProps) {
         ) : (
           <FlatList
             data={filteredRuns}
-            keyExtractor={(run) => run.id}
+            keyExtractor={runKeyExtractor}
             refreshControl={
               <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />
             }
-            renderItem={({ item: run }) => {
-              const provider = getProviderInfo(run.inputModel);
-              const statusColor = getStatusColor(run.status);
-              return (
-                <Pressable
-                  onPress={() => setSelectedRun(run)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderBottomWidth: 1,
-                    borderBottomColor: C.b1,
-                    gap: 10,
-                  }}
-                >
-                  <Circle size={8} color={statusColor} fill={statusColor} />
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        color: C.text,
-                        fontFamily: "monospace",
-                        fontSize: 12,
-                        fontWeight: "600",
-                      }}
-                    >
-                      {run.project?.name ?? "Untitled"}
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 8,
-                        marginTop: 4,
-                      }}
-                    >
-                      <Tag label={provider.name} color={provider.color} />
-                      <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>
-                        {formatTime(run.createdAt)}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    <Text
-                      style={{
-                        color: C.green,
-                        fontFamily: "monospace",
-                        fontSize: 10,
-                        fontWeight: "700",
-                      }}
-                    >
-                      {run.parseFileCount} files
-                    </Text>
-                    <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>
-                      {formatTokens(
-                        (run.usageInputTokens ?? 0) + (run.usageOutputTokens ?? 0)
-                      )}{" "}
-                      tokens
-                    </Text>
-                  </View>
-                  <ChevronRight size={14} color={C.dim} />
-                </Pressable>
-              );
-            }}
+            initialNumToRender={12}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews
+            renderItem={renderRunItem}
           />
         )}
 

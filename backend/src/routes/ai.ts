@@ -2,10 +2,25 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { env } from "../env";
+import { auth } from "../auth";
 import OpenAI from "openai";
 import { streamSSE } from "hono/streaming";
 
-const aiRouter = new Hono();
+const aiRouter = new Hono<{
+  Variables: {
+    user: typeof auth.$Infer.Session.user | null;
+    session: typeof auth.$Infer.Session.session | null;
+  };
+}>();
+
+// Auth middleware — all AI endpoints require authentication
+aiRouter.use("*", async (c, next) => {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ error: { message: "Unauthorized", code: "UNAUTHORIZED" } }, 401);
+  }
+  await next();
+});
 
 // Initialize OpenAI client
 const openai = new OpenAI({

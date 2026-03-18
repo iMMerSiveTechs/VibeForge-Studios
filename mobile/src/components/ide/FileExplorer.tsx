@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import {
   ChevronRight,
@@ -260,6 +260,21 @@ export function FileExplorer({
     }
     return initial;
   });
+
+  // Auto-expand any new top-level folders when files change
+  useEffect(() => {
+    setExpanded((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const node of tree) {
+        if (node.type === "folder" && !next.has(node.path)) {
+          next.add(node.path);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [tree]);
 
   const handleToggle = (path: string) => {
     setExpanded((prev) => {
