@@ -40,6 +40,8 @@ interface Asset {
   createdAt: string;
 }
 
+const PAGE_SIZE = 50;
+
 export default function ImageTab() {
   const { width: screenWidth } = useWindowDimensions();
   const cellSize = (screenWidth - 40 - (NUM_COLS - 1) * 6) / NUM_COLS;
@@ -47,6 +49,7 @@ export default function ImageTab() {
   const [generatePrompt, setGeneratePrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const showToast = useToastStore((s) => s.show);
   const queryClient = useQueryClient();
 
@@ -60,6 +63,17 @@ export default function ImageTab() {
     () => (assets ?? []).filter((a) => a.contentType.startsWith("image/")),
     [assets]
   );
+
+  const paginatedAssets = useMemo(
+    () => imageAssets.slice(0, visibleCount),
+    [imageAssets, visibleCount]
+  );
+
+  const handleLoadMore = useCallback(() => {
+    if (visibleCount < imageAssets.length) {
+      setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, imageAssets.length));
+    }
+  }, [visibleCount, imageAssets.length]);
 
   // Delete asset
   const { mutate: deleteAsset } = useMutation({
@@ -451,7 +465,7 @@ export default function ImageTab() {
         </ScrollView>
       ) : (
         <FlatList
-          data={imageAssets}
+          data={paginatedAssets}
           numColumns={NUM_COLS}
           keyExtractor={keyExtractorById}
           contentContainerStyle={{
@@ -464,6 +478,8 @@ export default function ImageTab() {
           windowSize={5}
           removeClippedSubviews
           renderItem={renderImageItem}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
           ListHeaderComponent={
             <Text
               style={{
