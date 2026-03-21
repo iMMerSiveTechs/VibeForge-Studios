@@ -1,57 +1,35 @@
 # Dependencies
 node_modules/
+.expo/
 .bun/
-
-# Build output
-.next/
-dist/
-build/
-*.tsbuildinfo
 
 # Environment & secrets
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+
+# OpenClaw workspace (local agent data)
+.openclaw/
+memory/
+MEMORY.md
+USER.md
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
 
-# Expo
-.expo/
-
-# OpenClaw runtime (keep workspace files, exclude runtime state)
-.openclaw/
-
-# Audio/media (use git-lfs for these)
-*.wav
-*.mp3
-*.aac
-*.m4a
-
-# Database
-*.db
-*.db-journal
-*.sqlite
-*.sqlite3
-
-# Logs
+# Temp files
+tmp-images/
 *.log
-npm-debug.log*
 
-# Coverage
-coverage/
-
-# Mobile builds
-*.ipa
-*.apk
-*.aab
-android/app/build/
-ios/build/
-ios/Pods/
+# IDE
+.vscode/
+.idea/

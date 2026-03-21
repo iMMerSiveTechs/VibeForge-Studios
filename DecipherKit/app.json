@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "DecipherKit",
+    "slug": "decipherkit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "DecipherKit needs camera access to capture handwritten text for transcription.",
+        "NSPhotoLibraryUsageDescription": "DecipherKit needs photo library access to select images of handwritten text."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "DecipherKit needs camera access to capture handwritten text for transcription."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "DecipherKit needs photo library access to select images of handwritten text."
+        }
+      ],
+      "expo-asset"
+    ]
+  }
+}
