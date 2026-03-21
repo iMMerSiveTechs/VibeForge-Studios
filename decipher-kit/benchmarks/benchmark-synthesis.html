@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DecipherKit Benchmark — Round 1 Synthesis</title>
+<style>
+  :root {
+    --cyan: #95CBDE;
+    --magenta: #A75FBB;
+    --violet: #413672;
+    --dark: #020203;
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --orange: #fb923c;
+    --white: #f0f0f0;
+    --gray: #888;
+    --card-bg: #0d0d14;
+    --border: #1a1a2e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--dark);
+    color: var(--white);
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    padding: 24px;
+    line-height: 1.6;
+  }
+  h1 {
+    font-size: 1.6rem;
+    color: var(--cyan);
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: var(--gray);
+    font-size: 0.85rem;
+    margin-bottom: 32px;
+  }
+  .subtitle span { color: var(--magenta); }
+
+  /* Rankings Bar */
+  .rankings {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .rank-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .rank-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .rank-card.r1::before { background: var(--green); }
+  .rank-card.r2::before { background: var(--cyan); }
+  .rank-card.r3::before { background: var(--yellow); }
+  .rank-card.r4::before { background: var(--red); }
+  .rank-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gray);
+    margin-bottom: 8px;
+  }
+  .rank-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  .rank-stat {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+  .rank-card.r1 .rank-stat { color: var(--green); }
+  .rank-card.r2 .rank-stat { color: var(--cyan); }
+  .rank-card.r3 .rank-stat { color: var(--yellow); }
+  .rank-card.r4 .rank-stat { color: var(--red); }
+  .rank-sub {
+    font-size: 0.75rem;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+
+  /* Comparison Table */
+  .section-title {
+    font-size: 1.1rem;
+    color: var(--magenta);
+    margin: 32px 0 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--card-bg);
+    color: var(--cyan);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--violet);
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  tr:hover td { background: rgba(149,203,222,0.05); }
+  .check { color: var(--green); }
+  .cross { color: var(--red); }
+  .partial { color: var(--yellow); }
+  .na { color: var(--gray); }
+
+  /* Bar Charts */
+  .bar-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .bar-group {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .bar-group h3 {
+    font-size: 0.85rem;
+    color: var(--cyan);
+    margin-bottom: 16px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .bar-label {
+    width: 60px;
+    font-size: 0.75rem;
+    color: var(--gray);
+  }
+  .bar-track {
+    flex: 1;
+    height: 24px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    transition: width 0.6s ease;
+  }
+  .bar-fill.accuracy { background: linear-gradient(90deg, var(--violet), var(--cyan)); }
+  .bar-fill.halluc { background: linear-gradient(90deg, var(--red), var(--orange)); }
+  .bar-fill.trust-high { background: var(--green); }
+  .bar-fill.trust-med { background: var(--yellow); }
+  .bar-fill.trust-low { background: var(--red); }
+
+  /* Findings */
+  .findings {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .findings h3 {
+    color: var(--cyan);
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+  }
+  .finding-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px;
+    border-left: 3px solid var(--violet);
+    background: rgba(65,54,114,0.1);
+    border-radius: 0 8px 8px 0;
+  }
+  .finding-num {
+    color: var(--magenta);
+    font-weight: bold;
+    min-width: 24px;
+  }
+  .finding-text {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .finding-text strong { color: var(--cyan); }
+
+  /* Blind Spots */
+  .blind-spots {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .blind-card {
+    background: var(--card-bg);
+    border: 1px solid var(--red);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .blind-card h4 {
+    color: var(--red);
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+  .blind-card p {
+    font-size: 0.8rem;
+    color: var(--gray);
+    margin-bottom: 8px;
+  }
+  .blind-reads {
+    font-size: 0.75rem;
+    color: var(--white);
+  }
+  .blind-reads span {
+    display: inline-block;
+    background: rgba(248,113,113,0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin: 2px 4px 2px 0;
+  }
+
+  /* Engineering Actions */
+  .actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .action-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .action-card.done { border-left: 3px solid var(--green); }
+  .action-card.proposed { border-left: 3px solid var(--yellow); }
+  .action-status {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .action-status.done { color: var(--green); }
+  .action-status.proposed { color: var(--yellow); }
+  .action-name {
+    font-size: 0.85rem;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+  .action-reason {
+    font-size: 0.75rem;
+    color: var(--gray);
+  }
+
+  /* Product Positioning */
+  .product-box {
+    background: linear-gradient(135deg, rgba(65,54,114,0.3), rgba(167,95,187,0.1));
+    border: 1px solid var(--magenta);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .product-box h3 {
+    color: var(--magenta);
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+  }
+  .product-item {
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    padding-left: 16px;
+    position: relative;
+  }
+  .product-item::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--cyan);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    color: var(--gray);
+    font-size: 0.7rem;
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .footer span { color: var(--cyan); }
+
+  @media (max-width: 768px) {
+    .rankings { grid-template-columns: 1fr 1fr; }
+    .bar-section { grid-template-columns: 1fr; }
+    .blind-spots { grid-template-columns: 1fr; }
+    .actions-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>DecipherKit Benchmark — Round 1 Final Synthesis</h1>
+<p class="subtitle">4 AIs blind-tested on JayTee's handwriting · 4 photos · 28 distinct elements · <span>Glyph Map v0.2</span></p>
+
+<!-- Rankings -->
+<div class="rankings">
+  <div class="rank-card r1">
+    <div class="rank-label">🏆 Highest Accuracy</div>
+    <div class="rank-name">AI #2</div>
+    <div class="rank-stat">54%</div>
+    <div class="rank-sub">Glyph map boosted · 3 hallucinations</div>
+  </div>
+  <div class="rank-card r2">
+    <div class="rank-label">🛡️ Most Trustworthy</div>
+    <div class="rank-name">AI #3</div>
+    <div class="rank-stat">0</div>
+    <div class="rank-sub">Zero hallucinations · 36% accuracy</div>
+  </div>
+  <div class="rank-card r3">
+    <div class="rank-label">⚖️ Best Balance</div>
+    <div class="rank-name">AI #1</div>
+    <div class="rank-stat">50%</div>
+    <div class="rank-sub">Steady performance · 2 hallucinations</div>
+  </div>
+  <div class="rank-card r4">
+    <div class="rank-label">⚠️ Most Dangerous</div>
+    <div class="rank-name">AI #4</div>
+    <div class="rank-stat">21%</div>
+    <div class="rank-sub">Hallucination rate · 36% accuracy</div>
+  </div>
+</div>
+
+<!-- Bar Charts -->
+<div class="bar-section">
+  <div class="bar-group">
+    <h3>Accuracy (% fully correct out of 28 elements)</h3>
+    <div class="bar-row">
+      <div class="bar-label">AI #2</div>
+      <div class="bar-track"><div class="bar-fill accuracy" style="width:54%">54%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">AI #1</div>
+      <div class="bar-track"><div class="bar-fill accuracy" style="width:50%">50%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">AI #3</div>
+      <div class="bar-track"><div class="bar-fill accuracy" style="width:36%">36%</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">AI #4</div>
+      <div class="bar-track"><div class="bar-fill accuracy" style="width:36%">36%</div></div>
+    </div>
+  </div>
+  <div class="bar-group">
+    <h3>Hallucination Rate (% fabricated content)</h3>
+    <div class="bar-row">
+      <div class="bar-label">AI #4</div>
+      <div class="bar-track"><div class="bar-fill halluc" style="width:63%">21% — 6 fabrications</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">AI #2</div>
+      <div class="bar-track"><div class="bar-fill halluc" style="width:33%">11% — 3 fabrications</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">AI #1</div>
+      <div class="bar-track"><div class="bar-fill halluc" style="width:21%">7% — 2 fabrications</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">AI #3</div>
+      <div class="bar-track"><div class="bar-fill halluc" style="width:0%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Full Comparison Table -->
+<div class="section-title">Element-by-Element Comparison</div>
+<table>
+  <thead>
+    <tr>
+      <th>Surface / Element</th>
+      <th>Ground Truth</th>
+      <th>AI #1</th>
+      <th>AI #2</th>
+      <th>AI #3</th>
+      <th>AI #4</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>S1 — Green sticky</td>
+      <td>Claude Code</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+    </tr>
+    <tr>
+      <td>S2 — Pink sticky</td>
+      <td>Claude/Voice · agents - F500 · Executive Branches</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+    </tr>
+    <tr>
+      <td>S3 — Yellow sticky</td>
+      <td>Claude Cowork · Mobile Control · How to use it</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="cross">✗ "CO VOR K" · "movie com?"</td>
+    </tr>
+    <tr>
+      <td>S4 — Yellow sticky</td>
+      <td>A Full Siri Record APP</td>
+      <td class="partial">⚠ "A few siri recos"</td>
+      <td class="cross">✗ "A Full Suite APP"</td>
+      <td class="partial">⚠ partial</td>
+      <td class="partial">⚠ "A full Siri?" (dropped 'record')</td>
+    </tr>
+    <tr>
+      <td>S5 — Pink sideways</td>
+      <td>VibeForge Studios</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="cross">✗ "Video Forge study"</td>
+    </tr>
+    <tr>
+      <td>S6 — Pink sideways</td>
+      <td>Forge Command Center</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="cross">✗ "(move?) cannel"</td>
+    </tr>
+    <tr>
+      <td>S7 — Green paperclipped</td>
+      <td>OpenClaw</td>
+      <td class="cross">✗ "Open C/L"</td>
+      <td class="check">✓</td>
+      <td class="cross">✗</td>
+      <td class="cross">✗ "Open Claude"</td>
+    </tr>
+    <tr>
+      <td>S8 — Pink paperclipped</td>
+      <td>← are we connected?</td>
+      <td class="check">✓</td>
+      <td class="partial">⚠ flagged unreadable</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+    </tr>
+    <tr>
+      <td>S9 — Manila edge</td>
+      <td>Procurement OS</td>
+      <td class="cross">✗ missed</td>
+      <td class="cross">✗ missed</td>
+      <td class="cross">✗ missed</td>
+      <td class="cross">✗ missed</td>
+    </tr>
+    <tr>
+      <td>S10 — Notepad date</td>
+      <td>04/19/26</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="cross">✗ 04/18/26</td>
+    </tr>
+    <tr>
+      <td>S10 — Notepad time</td>
+      <td>1:53</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="cross">✗ 1:52</td>
+    </tr>
+    <tr>
+      <td>S10 — Left: OpenClaw</td>
+      <td>OpenClaw</td>
+      <td class="cross">✗ "Open cal"</td>
+      <td class="cross">✗ "Tracker"</td>
+      <td class="cross">✗</td>
+      <td class="cross">✗ "Operations"</td>
+    </tr>
+    <tr>
+      <td>S10 — Left: Mapping</td>
+      <td>Mapping</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="partial">⚠ "Mappings"</td>
+    </tr>
+    <tr>
+      <td>S10 — Left: Structure</td>
+      <td>Structure</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="partial">⚠</td>
+      <td class="cross">✗ "Text/length/time?"</td>
+    </tr>
+    <tr>
+      <td>S10 — Left: (Audit)</td>
+      <td>(Audit)</td>
+      <td class="cross">✗ missed</td>
+      <td class="check">✓</td>
+      <td class="cross">✗</td>
+      <td class="check">✓</td>
+    </tr>
+    <tr>
+      <td>S10 — Left: Phase —</td>
+      <td>—— (separator)</td>
+      <td class="cross">✗ ignored</td>
+      <td class="partial">⚠ mischaracterized</td>
+      <td class="cross">✗</td>
+      <td class="partial">⚠ noted but wrong meaning</td>
+    </tr>
+    <tr>
+      <td>S10 — Left: Rep Plan</td>
+      <td>Rep Plan</td>
+      <td class="cross">✗ "Design"</td>
+      <td class="check">✓ pz-002</td>
+      <td class="partial">⚠</td>
+      <td class="cross">✗ missed</td>
+    </tr>
+    <tr>
+      <td>S10 — Right: Tracks</td>
+      <td>Tracks</td>
+      <td class="cross">✗ "Ticket"</td>
+      <td class="check">✓ pz-001</td>
+      <td class="cross">✗</td>
+      <td class="cross">✗ missed</td>
+    </tr>
+    <tr>
+      <td>S10 — Right: Token Usage</td>
+      <td>Token Usage</td>
+      <td class="partial">⚠ "Ticket usage" then "Token"</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+    </tr>
+    <tr>
+      <td>S10 — Right: — gives —</td>
+      <td>— gives —</td>
+      <td class="cross">✗ "- sizes"</td>
+      <td class="cross">✗ "— Siri —" (bleed)</td>
+      <td class="cross">✗</td>
+      <td class="cross">✗ "- sizes"</td>
+    </tr>
+    <tr>
+      <td>S10 — Right: real feedback</td>
+      <td>real feedback</td>
+      <td class="check">✓</td>
+      <td class="cross">✗ "Post Tracking"</td>
+      <td class="cross">✗</td>
+      <td class="cross">✗ "rest meetings"</td>
+    </tr>
+    <tr>
+      <td>S10 — Right: on token</td>
+      <td>on token</td>
+      <td class="check">✓</td>
+      <td class="cross">✗ "Vis Token"</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+    </tr>
+    <tr>
+      <td>Color accuracy</td>
+      <td>Pink / Yellow / Green / Manila</td>
+      <td class="cross">✗ called pink "yellow"</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="partial">⚠</td>
+    </tr>
+    <tr>
+      <td>Paperclip noted</td>
+      <td>Green ↔ Pink attachment</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+      <td class="check">✓</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Universal Blind Spots -->
+<div class="section-title">Universal Blind Spots — 0 for 4</div>
+<div class="blind-spots">
+  <div class="blind-card">
+    <h4>Procurement OS (S9 — manila edge)</h4>
+    <p>Every AI missed this. Partially visible at image edge. Manila/tan color distinct from yellow and pink, but no AI scanned edges.</p>
+    <div class="blind-reads">
+      <span>AI #1: missed</span>
+      <span>AI #2: missed</span>
+      <span>AI #3: missed</span>
+      <span>AI #4: missed</span>
+    </div>
+  </div>
+  <div class="blind-card">
+    <h4>OpenClaw on Notepad (S10 — appears 6+ times)</h4>
+    <p>The word "OpenClaw" appears across every image. No AI consistently identified it on the notepad.</p>
+    <div class="blind-reads">
+      <span>AI #1: "Open cal"</span>
+      <span>AI #2: "Tracker"</span>
+      <span>AI #3: missed</span>
+      <span>AI #4: "Operations"</span>
+    </div>
+  </div>
+</div>
+
+<!-- Key Findings -->
+<div class="section-title">Key Findings</div>
+<div class="findings">
+  <h3>What the Benchmark Proves</h3>
+  <div class="finding-item">
+    <div class="finding-num">1</div>
+    <div class="finding-text"><strong>No AI broke 54%</strong> on personalized handwriting. The best raw AI (no glyph map) hit 50%. This gap IS the market for DecipherKit — every major AI gets your handwriting wrong half the time.</div>
+  </div>
+  <div class="finding-item">
+    <div class="finding-num">2</div>
+    <div class="finding-text"><strong>The glyph map works — but needs a leash.</strong> AI #2 (with glyph map) was the only one to get "Rep Plan" and "Tracks" right. But it also caused 3 hallucinations via context bleed. The confidence gate (v0.3) is the fix.</div>
+  </div>
+  <div class="finding-item">
+    <div class="finding-num">3</div>
+    <div class="finding-text"><strong>Zero hallucinations > high accuracy.</strong> AI #3 scored lowest (36%) but never fabricated a single word. In production, a wrong read you can correct is better than a confident hallucination you can't detect.</div>
+  </div>
+  <div class="finding-item">
+    <div class="finding-num">4</div>
+    <div class="finding-text"><strong>Confidence without accuracy is the worst outcome.</strong> AI #4 marked wrong reads as HIGH confidence, built themes on fabricated words, and listed hallucinated items as action items. DecipherKit must prevent this failure mode above all others.</div>
+  </div>
+  <div class="finding-item">
+    <div class="finding-num">5</div>
+    <div class="finding-text"><strong>Notepad (structured, multi-column) is 2-3x harder</strong> than sticky notes (large, isolated text) for every AI tested. This is where the glyph map adds the most value.</div>
+  </div>
+  <div class="finding-item">
+    <div class="finding-num">6</div>
+    <div class="finding-text"><strong>Cross-image synthesis is broken everywhere.</strong> Same stickies appear in multiple photos — no AI fully leveraged this to resolve ambiguous reads. DecipherKit's multi-image protocol is a genuine differentiator.</div>
+  </div>
+  <div class="finding-item">
+    <div class="finding-num">7</div>
+    <div class="finding-text"><strong>Structural notation is invisible to raw AI.</strong> Phase separators (——), flanking dashes (— word —), arrows (←), parenthetical qualifiers ((Audit)) — 3 of 4 AIs ignored or misinterpreted these. They carry real semantic meaning in JayTee's system.</div>
+  </div>
+  <div class="finding-item">
+    <div class="finding-num">8</div>
+    <div class="finding-text"><strong>Edge scanning is a universal gap.</strong> Procurement OS was visible at the edge of multiple images. 0 for 4 AIs caught it. The v0.3 edge scanning mandate addresses this directly.</div>
+  </div>
+</div>
+
+<!-- Engineering Actions -->
+<div class="section-title">Engineering Actions</div>
+<div class="actions-grid">
+  <div class="action-card done">
+    <div class="action-status done">✓ Implemented in v0.3</div>
+    <div class="action-name">Confidence Gate (70% threshold)</div>
+    <div class="action-reason">Glyph corrections only fire on genuinely ambiguous letterforms</div>
+  </div>
+  <div class="action-card done">
+    <div class="action-status done">✓ Implemented in v0.3</div>
+    <div class="action-name">Context Bleed Rule (pz-006)</div>
+    <div class="action-reason">Prevent cross-surface vocabulary contamination</div>
+  </div>
+  <div class="action-card done">
+    <div class="action-status done">✓ Implemented in v0.3</div>
+    <div class="action-name">Edge Scanning Mandate</div>
+    <div class="action-reason">All 4 AIs missed Procurement OS at image edge</div>
+  </div>
+  <div class="action-card done">
+    <div class="action-status done">✓ Implemented in v0.3</div>
+    <div class="action-name">Flanking Dashes Notation</div>
+    <div class="action-reason">"— gives —" section divider pattern documented</div>
+  </div>
+  <div class="action-card done">
+    <div class="action-status done">✓ Implemented in v0.3</div>
+    <div class="action-name">Cross-Image Synthesis Strengthened</div>
+    <div class="action-reason">Partial reads must be resolved across images before flagging unreadable</div>
+  </div>
+  <div class="action-card proposed">
+    <div class="action-status proposed">◐ Proposed for v0.4</div>
+    <div class="action-name">Hallucination Severity Classification</div>
+    <div class="action-reason">3-tier: fabrication (invented) > context bleed (real word, wrong place) > misread (letterform)</div>
+  </div>
+  <div class="action-card proposed">
+    <div class="action-status proposed">◐ Proposed for v0.4</div>
+    <div class="action-name">Confidence Calibration Metric</div>
+    <div class="action-reason">Stated confidence vs actual accuracy — poorly calibrated confidence is worse than none</div>
+  </div>
+  <div class="action-card proposed">
+    <div class="action-status proposed">◐ Proposed for v0.4</div>
+    <div class="action-name">OpenClaw Mandatory Glyph Training</div>
+    <div class="action-reason">Universal blind spot: 0 for 4 on notepad. Needs explicit letterform training.</div>
+  </div>
+</div>
+
+<!-- Product Positioning -->
+<div class="product-box">
+  <h3>DecipherKit — Product Positioning from Benchmark Data</h3>
+  <div class="product-item">v0.4 should combine AI #2's glyph map accuracy with AI #3's zero-hallucination discipline</div>
+  <div class="product-item">Confidence calibration is the trust layer — users must know when to verify vs when to trust</div>
+  <div class="product-item">The correction loop is the product moat — each correction makes the next read better. No other AI does this.</div>
+  <div class="product-item">Multi-surface synthesis (cross-image reading) is a differentiator no raw AI handles well</div>
+  <div class="product-item">Market hook: <strong>"Every AI we tested gets your handwriting wrong half the time. DecipherKit learns YOUR writing."</strong></div>
+  <div class="product-item">Target verticals: medical offices (doctor scrawl → structured data), field service (site notes → line items), legal (handwritten annotations → searchable text), education (student work → digital records)</div>
+</div>
+
+<div class="footer">
+  <span>DecipherKit</span> · Benchmark Round 1 · 2026-03-19 · VibeForge Studios · Glyph Map v0.3
+</div>
+
+</body>
+</html>

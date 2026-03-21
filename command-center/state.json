@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-03-19T16:50:47.637Z",
+  "projects": [
+    {
+      "id": "desk",
+      "name": "Desk",
+      "status": "active",
+      "priority": 1,
+      "currentGoal": "Route and triage",
+      "blockers": [],
+      "lastAction": "Set up workspace",
+      "nextAction": "Test routing",
+      "lane": "ops",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    },
+    {
+      "id": "churnwise",
+      "name": "ChurnWise",
+      "status": "active",
+      "priority": 2,
+      "currentGoal": "Ship pricing v3",
+      "blockers": [],
+      "lastAction": "Design mockups",
+      "nextAction": "Build component",
+      "lane": "product",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    },
+    {
+      "id": "cerebraspark",
+      "name": "CerebraSpark",
+      "status": "queued",
+      "priority": 3,
+      "currentGoal": "Prototype spark generator",
+      "blockers": [
+        "Waiting on API"
+      ],
+      "lastAction": "Research ideation",
+      "nextAction": "Build prototype",
+      "lane": "product",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    },
+    {
+      "id": "habit",
+      "name": "Habit",
+      "status": "queued",
+      "priority": 4,
+      "currentGoal": "Daily habit tracker",
+      "blockers": [],
+      "lastAction": "Design schema",
+      "nextAction": "Build checklist UI",
+      "lane": "product",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "mmxpi9ckr3hgw",
+      "project": "desk",
+      "title": "Configure Telegram topics",
+      "status": "active",
+      "owner": "desk-agent",
+      "type": "execution",
+      "priority": 1,
+      "blockedBy": null,
+      "notes": "",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    },
+    {
+      "id": "mmxpi9ckbjhz7",
+      "project": "desk",
+      "title": "Set up BlueBubbles",
+      "status": "queued",
+      "owner": "desk-agent",
+      "type": "execution",
+      "priority": 2,
+      "blockedBy": null,
+      "notes": "",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    },
+    {
+      "id": "mmxpi9ckze8v8",
+      "project": "churnwise",
+      "title": "Build pricing screen v3",
+      "status": "active",
+      "owner": "churnwise-agent",
+      "type": "execution",
+      "priority": 1,
+      "blockedBy": null,
+      "notes": "",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    },
+    {
+      "id": "mmxpi9ckwtpk7",
+      "project": "cerebraspark",
+      "title": "Prototype spark generator",
+      "status": "blocked",
+      "owner": "cerebraspark-agent",
+      "type": "planning",
+      "priority": 1,
+      "blockedBy": "API access",
+      "notes": "",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    },
+    {
+      "id": "mmxpi9ck8qxka",
+      "project": "habit",
+      "title": "Build checklist UI",
+      "status": "queued",
+      "owner": "habit-agent",
+      "type": "execution",
+      "priority": 1,
+      "blockedBy": null,
+      "notes": "",
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "mmxpi9ck02j49",
+      "question": "Use Telegram supergroup or separate groups?",
+      "options": [
+        "Supergroup with topics",
+        "Separate groups per project"
+      ],
+      "recommendation": "Supergroup with topics",
+      "lensesApplied": [
+        "MISSION",
+        "COST"
+      ],
+      "outcome": null,
+      "userId": "local",
+      "createdAt": "2026-03-19T16:50:47.636Z",
+      "updatedAt": "2026-03-19T16:50:47.636Z"
+    }
+  ]
+}

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Switch } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Settings as SettingsIcon, Shield, Info } from "lucide-react-native";
+import { Settings as SettingsIcon, Shield, Info, Key, Eye, EyeOff } from "lucide-react-native";
 import { api } from "@/lib/api/api";
 import { authClient } from "@/lib/auth/auth-client";
 import { C } from "@/theme/colors";
@@ -11,8 +11,6 @@ import { useToastStore } from "@/lib/state/toast-store";
 import { Button } from "@/components/ui/Button";
 import { Box } from "@/components/ui/Box";
 import { Input } from "@/components/ui/Input";
-import { Dialog } from "@/components/ui/Dialog";
-import { useFeatureFlags } from "@/lib/feature-flags";
 
 interface SettingsMap {
   [key: string]: string;
@@ -28,6 +26,9 @@ interface ModelOption {
 }
 
 const DEFAULT_SETTINGS: SettingsMap = {
+  api_key_claude: "",
+  api_key_openai: "",
+  api_key_gemini: "",
   model_claude: "claude-sonnet-4-6",
   model_openai: "gpt-4o",
   model_gemini: "gemini-2.5-pro",
@@ -36,128 +37,16 @@ const DEFAULT_SETTINGS: SettingsMap = {
   rate_gemini: "7",
 };
 
-const FLAG_TOGGLES: { key: string; label: string }[] = [
-  { key: "SHOW_IMAGE_TAB", label: "Image Tab" },
-  { key: "SHOW_AUDIO_TAB", label: "Audio Tab" },
-  { key: "SHOW_PAYMENT_TAB", label: "Payment Tab" },
-  { key: "SHOW_REQUEST_TAB", label: "Request Tab" },
-  { key: "SHOW_ENV_TAB", label: "Env Tab" },
-  { key: "SHOW_ADVANCED_FORGE", label: "Advanced Forge" },
-];
-
-function DeveloperOptionsSection() {
-  const showImage = useFeatureFlags((s) => s.SHOW_IMAGE_TAB);
-  const showAudio = useFeatureFlags((s) => s.SHOW_AUDIO_TAB);
-  const showPayment = useFeatureFlags((s) => s.SHOW_PAYMENT_TAB);
-  const showRequest = useFeatureFlags((s) => s.SHOW_REQUEST_TAB);
-  const showEnv = useFeatureFlags((s) => s.SHOW_ENV_TAB);
-  const showAdvancedForge = useFeatureFlags((s) => s.SHOW_ADVANCED_FORGE);
-  const previewTier = useFeatureFlags((s) => s.PREVIEW_TIER);
-  const setFlag = useFeatureFlags((s) => s.setFlag);
-  const setPreviewTier = useFeatureFlags((s) => s.setPreviewTier);
-
-  const flagValues: Record<string, boolean> = {
-    SHOW_IMAGE_TAB: showImage,
-    SHOW_AUDIO_TAB: showAudio,
-    SHOW_PAYMENT_TAB: showPayment,
-    SHOW_REQUEST_TAB: showRequest,
-    SHOW_ENV_TAB: showEnv,
-    SHOW_ADVANCED_FORGE: showAdvancedForge,
-  };
-
-  return (
-    <View className="mt-2 mb-5">
-      <Text
-        className="text-xs uppercase tracking-widest mb-2"
-        style={{ fontFamily: "monospace", color: C.mg }}
-      >
-        Developer Options
-      </Text>
-      <Box accentColor={C.mg}>
-        {FLAG_TOGGLES.map((item, idx) => (
-          <View
-            key={item.key}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingVertical: 10,
-              borderBottomWidth: idx < FLAG_TOGGLES.length - 1 ? 1 : 0,
-              borderBottomColor: C.b1,
-            }}
-          >
-            <Text
-              style={{
-                color: C.text,
-                fontSize: 12,
-                fontFamily: "monospace",
-              }}
-            >
-              {item.label}
-            </Text>
-            <Switch
-              value={flagValues[item.key]}
-              onValueChange={(v) => setFlag(item.key, v)}
-              trackColor={{ false: C.s2, true: C.mg + "66" }}
-              thumbColor={flagValues[item.key] ? C.mg : C.dim}
-            />
-          </View>
-        ))}
-
-        {/* Preview Tier Selector */}
-        <View style={{ paddingVertical: 10 }}>
-          <Text
-            style={{
-              color: C.text,
-              fontSize: 12,
-              fontFamily: "monospace",
-              marginBottom: 8,
-            }}
-          >
-            Preview Tier
-          </Text>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {([1, 2, 3] as const).map((tier) => {
-              const isActive = previewTier === tier;
-              return (
-                <TouchableOpacity
-                  key={tier}
-                  onPress={() => setPreviewTier(tier)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 8,
-                    borderRadius: 6,
-                    borderWidth: 1,
-                    borderColor: isActive ? C.mg : C.b1,
-                    backgroundColor: isActive ? C.mg + "22" : C.s2,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: isActive ? C.mg : C.dim,
-                      fontSize: 12,
-                      fontFamily: "monospace",
-                      fontWeight: isActive ? "700" : "400",
-                    }}
-                  >
-                    T{tier}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      </Box>
-    </View>
-  );
-}
+const API_KEY_FIELDS = [
+  { key: "api_key_claude", label: "Anthropic (Claude)", placeholder: "sk-ant-...", color: C.cy },
+  { key: "api_key_openai", label: "OpenAI", placeholder: "sk-...", color: C.green },
+  { key: "api_key_gemini", label: "Google (Gemini)", placeholder: "AI...", color: C.mid },
+] as const;
 
 export default function SettingsScreen() {
   const [form, setForm] = useState<SettingsMap>({ ...DEFAULT_SETTINGS });
   const [isDirty, setIsDirty] = useState(false);
-  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,16 +62,9 @@ export default function SettingsScreen() {
     queryFn: () => api.get<{ models: ModelOption[]; presetDefaults: Record<string, unknown> }>("/api/models"),
   });
 
-  // Cleanup auto-save timer on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    };
-  }, []);
-
   // Refetch settings when screen comes into focus
   useFocusEffect(
-    useCallback(() => {
+    React.useCallback(() => {
       refetch();
     }, [refetch])
   );
@@ -229,21 +111,41 @@ export default function SettingsScreen() {
     saveSettings(form);
   };
 
-  const handleSignOut = async () => {
-    setShowSignOutDialog(false);
-    await authClient.signOut();
-    router.replace("/");
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await authClient.signOut();
+          router.replace("/");
+        },
+      },
+    ]);
   };
 
-  const handleDeleteAccount = async () => {
-    setShowDeleteDialog(false);
-    try {
-      await api.delete("/api/me");
-      await authClient.signOut();
-      router.replace("/");
-    } catch {
-      showToast("Failed to delete account. Please try again.");
-    }
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account & Data",
+      "This will permanently delete your account and all associated data, including API keys and settings. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete("/api/me");
+              await authClient.signOut();
+              router.replace("/");
+            } catch {
+              showToast("Failed to delete account. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (isLoading) {
@@ -303,6 +205,48 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
+        {/* API Keys Section */}
+        <Text
+          className="text-xs uppercase tracking-widest mb-2"
+          style={{ fontFamily: "monospace", color: C.mg }}
+        >
+          <Key size={10} color={C.mg} /> API Keys
+        </Text>
+        <Box accentColor={C.mg} className="mb-5">
+          {API_KEY_FIELDS.map((field) => {
+            const isVisible = visibleKeys[field.key] ?? false;
+            const hasValue = (form[field.key] ?? "").length > 0;
+            return (
+              <View key={field.key} style={{ marginBottom: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ color: field.color, fontSize: 10, fontFamily: "monospace", fontWeight: "700", letterSpacing: 1 }}>
+                    {field.label.toUpperCase()}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setVisibleKeys((prev) => ({ ...prev, [field.key]: !prev[field.key] }))}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    {isVisible ? <EyeOff size={14} color={C.dim} /> : <Eye size={14} color={C.dim} />}
+                  </TouchableOpacity>
+                </View>
+                <Input
+                  value={form[field.key] ?? ""}
+                  onChangeText={(v) => updateField(field.key, v)}
+                  placeholder={field.placeholder}
+                  secureTextEntry={!isVisible}
+                  showSavedIndicator
+                />
+              </View>
+            );
+          })}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <Shield size={12} color={C.dim} />
+            <Text style={{ color: C.dim, fontSize: 9, fontFamily: "monospace", lineHeight: 14, flex: 1 }}>
+              Keys are stored on the server and sent over HTTPS. Never stored in plaintext on device.
+            </Text>
+          </View>
+        </Box>
+
         {/* Models Section */}
         <Text
           className="text-vf-green text-xs uppercase tracking-widest mb-2"
@@ -327,7 +271,7 @@ export default function SettingsScreen() {
                 </Text>
                 {providerModels.length === 0 ? (
                   <Text style={{ color: C.dim, fontSize: 10, fontFamily: "monospace" }}>
-                    Add API key above to see models
+                    Add your {providerLabels[provider]} API key above to see models
                   </Text>
                 ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
@@ -422,27 +366,6 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Privacy & Security Section */}
-        <View className="mt-6">
-          <Text
-            className="text-vf-cyan text-xs uppercase tracking-widest mb-2"
-            style={{ fontFamily: "monospace" }}
-          >
-            Privacy & Security
-          </Text>
-          <Box accentColor={C.cy} className="mb-4">
-            <View className="flex-row items-start mb-3" style={{ gap: 8 }}>
-              <Shield size={14} color={C.cy} style={{ marginTop: 1 }} />
-              <Text
-                className="text-vf-dim text-xs flex-1"
-                style={{ fontFamily: "monospace", lineHeight: 18 }}
-              >
-                Your API keys are stored securely on our servers and transmitted over HTTPS. They are never stored in plaintext on your device.
-              </Text>
-            </View>
-          </Box>
-        </View>
-
         {/* About Section */}
         <View className="mt-2">
           <Text
@@ -476,9 +399,6 @@ export default function SettingsScreen() {
           </Box>
         </View>
 
-        {/* Developer Options Section */}
-        <DeveloperOptionsSection />
-
         {/* Account Section */}
         <View className="mt-2">
           <Text
@@ -490,77 +410,17 @@ export default function SettingsScreen() {
           <View className="mb-3">
             <Button
               label="SIGN OUT"
-              onPress={() => setShowSignOutDialog(true)}
+              onPress={handleSignOut}
               variant="ghost"
             />
           </View>
           <Button
             label="DELETE ACCOUNT & DATA"
-            onPress={() => setShowDeleteDialog(true)}
+            onPress={handleDeleteAccount}
             variant="danger"
           />
         </View>
       </ScrollView>
-
-      {/* Sign Out Dialog */}
-      <Dialog
-        open={showSignOutDialog}
-        onClose={() => setShowSignOutDialog(false)}
-        title="Sign Out"
-      >
-        <Text
-          className="text-vf-text text-sm mb-4"
-          style={{ fontFamily: "monospace" }}
-        >
-          Are you sure you want to sign out?
-        </Text>
-        <View className="flex-row space-x-3">
-          <View className="flex-1">
-            <Button
-              label="Cancel"
-              onPress={() => setShowSignOutDialog(false)}
-              variant="ghost"
-            />
-          </View>
-          <View className="flex-1">
-            <Button
-              label="Sign Out"
-              onPress={handleSignOut}
-              variant="danger"
-            />
-          </View>
-        </View>
-      </Dialog>
-
-      {/* Delete Account Dialog */}
-      <Dialog
-        open={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        title="Delete Account & Data"
-      >
-        <Text
-          className="text-vf-text text-sm mb-4"
-          style={{ fontFamily: "monospace" }}
-        >
-          This will permanently delete your account and all associated data, including API keys and settings. This action cannot be undone.
-        </Text>
-        <View className="flex-row space-x-3">
-          <View className="flex-1">
-            <Button
-              label="Cancel"
-              onPress={() => setShowDeleteDialog(false)}
-              variant="ghost"
-            />
-          </View>
-          <View className="flex-1">
-            <Button
-              label="Delete"
-              onPress={handleDeleteAccount}
-              variant="danger"
-            />
-          </View>
-        </View>
-      </Dialog>
     </SafeAreaView>
   );
 }

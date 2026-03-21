@@ -18,6 +18,9 @@ const envSchema = z.object({
 
   // OpenAI (optional — keys are supplied per-request via Settings, not at server startup)
   OPENAI_API_KEY: z.string().optional(),
+
+  // Anthropic (for DecipherKit and other Claude API features)
+  ANTHROPIC_API_KEY: z.string().optional(),
 });
 
 /**

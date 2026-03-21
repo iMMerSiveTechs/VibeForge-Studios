@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DecipherKit Smoke Test Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #020203;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #95CBDE;
+        }
+
+        h1 {
+            color: #95CBDE;
+            font-size: 28px;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            color: #A75FBB;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .control-panel {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(149, 203, 222, 0.05);
+            border: 1px solid #95CBDE;
+            border-radius: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .run-button {
+            padding: 12px 24px;
+            background: #95CBDE;
+            color: #020203;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .run-button:hover:not(:disabled) {
+            background: #7bb3c0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(149, 203, 222, 0.3);
+        }
+
+        .run-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(167, 95, 187, 0.1);
+            border: 1px solid #A75FBB;
+            border-radius: 4px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-indicator.idle {
+            color: #95CBDE;
+        }
+
+        .status-indicator.running {
+            color: #FFD700;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-indicator.complete {
+            color: #4CAF50;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .tests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: #0a0a0c;
+            border: 1px solid #413672;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .test-card:hover {
+            border-color: #95CBDE;
+            background: rgba(149, 203, 222, 0.02);
+        }
+
+        .test-card.passed {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .test-card.failed {
+            border-color: #FF5252;
+            background: rgba(255, 82, 82, 0.05);
+        }
+
+        .test-card.running {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .test-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .test-icon {
+            font-size: 20px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .test-title {
+            font-weight: 600;
+            color: #95CBDE;
+            font-size: 16px;
+        }
+
+        .test-content {
+            margin-top: 12px;
+        }
+
+        .test-label {
+            font-size: 12px;
+            color: #A75FBB;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .test-message {
+            font-size: 13px;
+            color: #d0d0d0;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .test-status {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .test-status.success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .test-status.error {
+            background: rgba(255, 82, 82, 0.2);
+            color: #FF5252;
+        }
+
+        .test-status.warning {
+            background: rgba(255, 215, 0, 0.2);
+            color: #FFD700;
+        }
+
+        .test-status.pending {
+            background: rgba(149, 203, 222, 0.2);
+            color: #95CBDE;
+        }
+
+        .timer {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 12px;
+            color: #413672;
+        }
+
+        .summary-panel {
+            background: rgba(149, 203, 222, 0.05);
+            border: 1px solid #95CBDE;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .summary-title {
+            color: #95CBDE;
+            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stat-box {
+            background: #0a0a0c;
+            border: 1px solid #413672;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-box.passed .stat-number {
+            color: #4CAF50;
+        }
+
+        .stat-box.failed .stat-number {
+            color: #FF5252;
+        }
+
+        .stat-box.total .stat-number {
+            color: #95CBDE;
+        }
+
+        .summary-message {
+            text-align: center;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 12px;
+        }
+
+        .summary-message.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+
+        .summary-message.failure {
+            background: rgba(255, 82, 82, 0.1);
+            color: #FF5252;
+            border: 1px solid #FF5252;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #413672;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite;
+        }
+
+        .loader:nth-child(1) { animation-delay: -0.32s; }
+        .loader:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0); }
+            40% { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DecipherKit Smoke Test</h1>
+            <p class="subtitle">Pipeline Health & Configuration Dashboard</p>
+        </header>
+
+        <div class="control-panel">
+            <button class="run-button" id="runButton">Run Smoke Test</button>
+            <div class="status-indicator idle" id="statusIndicator">
+                <span>●</span>
+                <span id="statusText">Ready</span>
+            </div>
+        </div>
+
+        <div class="tests-grid">
+            <div class="test-card" id="test1">
+                <div class="test-header">
+                    <div class="test-icon" id="test1Icon">◯</div>
+                    <div class="test-title">Health Check</div>
+                </div>
+                <div class="test-content">
+                    <div class="test-label">GET /api/decipher/health</div>
+                    <div class="test-message" id="test1Message">Backend connectivity test</div>
+                    <div class="test-status pending" id="test1Status">Pending</div>
+                    <div class="timer" id="test1Timer"></div>
+                </div>
+            </div>
+
+            <div class="test-card" id="test2">
+                <div class="test-header">
+                    <div class="test-icon" id="test2Icon">◯</div>
+                    <div class="test-title">API Configuration</div>
+                </div>
+                <div class="test-content">
+                    <div class="test-label">Anthropic Key Status</div>
+                    <div class="test-message" id="test2Message">Checking API configuration</div>
+                    <div class="test-status pending" id="test2Status">Pending</div>
+                    <div class="timer" id="test2Timer"></div>
+                </div>
+            </div>
+
+            <div class="test-card" id="test3">
+                <div class="test-header">
+                    <div class="test-icon" id="test3Icon">◯</div>
+                    <div class="test-title">Transcribe Endpoint</div>
+                </div>
+                <div class="test-content">
+                    <div class="test-label">POST /api/decipher/transcribe</div>
+                    <div class="test-message" id="test3Message">Testing image processing endpoint</div>
+                    <div class="test-status pending" id="test3Status">Pending</div>
+                    <div class="timer" id="test3Timer"></div>
+                </div>
+            </div>
+
+            <div class="test-card" id="test4">
+                <div class="test-header">
+                    <div class="test-icon" id="test4Icon">◯</div>
+                    <div class="test-title">Correct Endpoint</div>
+                </div>
+                <div class="test-content">
+                    <div class="test-label">POST /api/decipher/correct</div>
+                    <div class="test-message" id="test4Message">Testing correction workflow</div>
+                    <div class="test-status pending" id="test4Status">Pending</div>
+                    <div class="timer" id="test4Timer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-panel" id="summaryPanel" style="display: none;">
+            <div class="summary-title">Test Summary</div>
+            <div class="summary-stats">
+                <div class="stat-box total">
+                    <div class="stat-number" id="totalTests">0</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-box passed">
+                    <div class="stat-number" id="passedTests">0</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-box failed">
+                    <div class="stat-number" id="failedTests">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+            <div class="summary-message" id="summaryMessage">
+                Test run in progress...
+            </div>
+        </div>
+
+        <footer>
+            <p>VibeForge Studios × DecipherKit Pipeline v1.0</p>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration
+        const BACKEND_URL = 'http://localhost:3000';
+        const HEALTH_ENDPOINT = '/api/decipher/health';
+        const TRANSCRIBE_ENDPOINT = '/api/decipher/transcribe';
+        const CORRECT_ENDPOINT = '/api/decipher/correct';
+        const WHITE_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+
+        // State
+        let isRunning = false;
+        let results = {
+            health: null,
+            apiConfig: null,
+            transcribe: null,
+            correct: null
+        };
+
+        const runButton = document.getElementById('runButton');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const summaryPanel = document.getElementById('summaryPanel');
+
+        // Event listener
+        runButton.addEventListener('click', runSmokeTest);
+
+        async function runSmokeTest() {
+            if (isRunning) return;
+
+            isRunning = true;
+            runButton.disabled = true;
+            updateStatus('running', 'Running tests...');
+            resetTests();
+            summaryPanel.style.display = 'none';
+
+            const startTime = Date.now();
+
+            try {
+                // Test 1: Health Check
+                await runTest(1, 'health', testHealth);
+
+                // Test 2: API Configuration (extracted from health response)
+                await runTest(2, 'apiConfig', testAPIConfig);
+
+                // Test 3: Transcribe Endpoint
+                await runTest(3, 'transcribe', testTranscribe);
+
+                // Test 4: Correct Endpoint
+                await runTest(4, 'correct', testCorrect);
+
+                // Show summary
+                const totalTime = Date.now() - startTime;
+                showSummary(totalTime);
+
+            } catch (error) {
+                console.error('Test suite error:', error);
+            } finally {
+                isRunning = false;
+                runButton.disabled = false;
+                updateStatus('complete', 'Tests complete');
+            }
+        }
+
+        async function runTest(testNumber, resultKey, testFn) {
+            const card = document.getElementById(`test${testNumber}`);
+            const icon = document.getElementById(`test${testNumber}Icon`);
+            const message = document.getElementById(`test${testNumber}Message`);
+            const status = document.getElementById(`test${testNumber}Status`);
+            const timer = document.getElementById(`test${testNumber}Timer`);
+
+            card.classList.add('running');
+            icon.textContent = '⧗';
+            status.textContent = 'Running...';
+            status.className = 'test-status pending';
+
+            const startTime = Date.now();
+
+            try {
+                const result = await testFn();
+                const duration = Date.now() - startTime;
+
+                results[resultKey] = result;
+
+                // Update UI
+                card.classList.remove('running');
+                icon.textContent = result.success ? '✓' : '✗';
+                message.textContent = result.message;
+                timer.textContent = `${duration}ms`;
+
+                if (result.success) {
+                    card.classList.add('passed');
+                    status.textContent = result.statusText || 'Success';
+                    status.className = 'test-status success';
+                } else {
+                    card.classList.add('failed');
+                    status.textContent = result.statusText || 'Failed';
+                    status.className = 'test-status error';
+                }
+            } catch (error) {
+                const duration = Date.now() - startTime;
+
+                card.classList.remove('running');
+                card.classList.add('failed');
+                icon.textContent = '✗';
+                message.textContent = error.message;
+                timer.textContent = `${duration}ms`;
+                status.textContent = 'Error';
+                status.className = 'test-status error';
+
+                results[resultKey] = { success: false, error: error.message };
+            }
+
+            // Add small delay between tests for readability
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        async function testHealth() {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${BACKEND_URL}${HEALTH_ENDPOINT}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: Backend not responding`);
+                }
+
+                const data = await response.json();
+                const duration = Date.now() - startTime;
+
+                return {
+                    success: true,
+                    message: `Connected to backend (${duration}ms)`,
+                    statusText: `HTTP ${response.status}`,
+                    data: data
+                };
+            } catch (error) {
+                throw new Error(`Cannot connect to ${BACKEND_URL} - Is the backend running?`);
+            }
+        }
+
+        async function testAPIConfig() {
+            if (!results.health || !results.health.success) {
+                throw new Error('Skipped - Health check failed');
+            }
+
+            const healthData = results.health.data;
+            const isConfigured = healthData?.data?.anthropicConfigured || false;
+
+            return {
+                success: true,
+                message: isConfigured ? 'Anthropic API is configured' : 'Anthropic API not configured',
+                statusText: isConfigured ? 'Configured' : 'Not Configured',
+                configured: isConfigured
+            };
+        }
+
+        async function testTranscribe() {
+            const payload = {
+                images: [WHITE_PIXEL],
+                config: {
+                    enableCrossImageSynthesis: false,
+                    highConfidenceThreshold: 0.9
+                }
+            };
+
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${BACKEND_URL}${TRANSCRIBE_ENDPOINT}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const duration = Date.now() - startTime;
+
+                if (response.ok || response.status === 201 || response.status === 400 || response.status === 422) {
+                    const data = await response.json();
+                    return {
+                        success: true,
+                        message: `Endpoint responsive (${duration}ms)`,
+                        statusText: `HTTP ${response.status}`,
+                        data: data
+                    };
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                throw new Error(`Transcribe endpoint error: ${error.message}`);
+            }
+        }
+
+        async function testCorrect() {
+            const payload = {
+                corrections: [
+                    {
+                        original: 'test',
+                        corrected: 'test-fixed'
+                    }
+                ]
+            };
+
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${BACKEND_URL}${CORRECT_ENDPOINT}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const duration = Date.now() - startTime;
+
+                if (response.ok || response.status === 201 || response.status === 400 || response.status === 422) {
+                    const data = await response.json();
+                    return {
+                        success: true,
+                        message: `Endpoint responsive (${duration}ms)`,
+                        statusText: `HTTP ${response.status}`,
+                        data: data
+                    };
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                throw new Error(`Correct endpoint error: ${error.message}`);
+            }
+        }
+
+        function resetTests() {
+            for (let i = 1; i <= 4; i++) {
+                const card = document.getElementById(`test${i}`);
+                const icon = document.getElementById(`test${i}Icon`);
+                const status = document.getElementById(`test${i}Status`);
+                const timer = document.getElementById(`test${i}Timer`);
+
+                card.className = 'test-card';
+                icon.textContent = '◯';
+                status.textContent = 'Running...';
+                status.className = 'test-status pending';
+                timer.textContent = '';
+            }
+        }
+
+        function updateStatus(state, text) {
+            statusIndicator.className = `status-indicator ${state}`;
+            statusText.textContent = text;
+        }
+
+        function showSummary(totalTime) {
+            const passed = Object.values(results).filter(r => r && r.success).length;
+            const failed = Object.values(results).filter(r => r && !r.success).length;
+            const total = Object.keys(results).length;
+
+            document.getElementById('totalTests').textContent = total;
+            document.getElementById('passedTests').textContent = passed;
+            document.getElementById('failedTests').textContent = failed;
+
+            const summaryMessage = document.getElementById('summaryMessage');
+            if (failed === 0) {
+                summaryMessage.className = 'summary-message success';
+                summaryMessage.textContent = `✓ All tests passed! (${totalTime}ms)`;
+            } else {
+                summaryMessage.className = 'summary-message failure';
+                summaryMessage.textContent = `✗ ${failed} test(s) failed (${totalTime}ms)`;
+            }
+
+            summaryPanel.style.display = 'block';
+            summaryPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>

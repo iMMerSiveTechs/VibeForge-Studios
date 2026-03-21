@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Landscape Intelligence Report — March 2026</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a3a;
+  --gold: #f5a623;
+  --gold-dim: #c4841a;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --green: #4ade80;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --purple: #a78bfa;
+  --cyan: #22d3ee;
+  --orange: #fb923c;
+  --pink: #f472b6;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 0;
+}
+.hero {
+  background: linear-gradient(135deg, #0a0a2e 0%, #1a0a3e 50%, #0a1a2e 100%);
+  padding: 60px 40px;
+  text-align: center;
+  border-bottom: 2px solid var(--gold);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 50%, rgba(245,166,35,0.05) 0%, transparent 50%),
+              radial-gradient(circle at 70% 50%, rgba(96,165,250,0.05) 0%, transparent 50%);
+}
+.hero h1 {
+  font-size: 2.8em;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--gold), #fff, var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+  position: relative;
+}
+.hero .subtitle {
+  color: var(--text-dim);
+  font-size: 1.1em;
+  position: relative;
+}
+.hero .date-badge {
+  display: inline-block;
+  background: var(--gold);
+  color: #000;
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.85em;
+  margin-top: 15px;
+  position: relative;
+}
+
+/* Navigation */
+.nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.nav button {
+  background: var(--surface2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.nav button:hover, .nav button.active {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+
+/* Sections */
+.section {
+  display: none;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+.section.active { display: block; }
+.section h2 {
+  font-size: 2em;
+  margin-bottom: 8px;
+  color: var(--gold);
+}
+.section .section-desc {
+  color: var(--text-dim);
+  margin-bottom: 30px;
+  font-size: 1.05em;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.card h3 {
+  font-size: 1.3em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card h3 .icon { font-size: 1.4em; }
+
+/* Tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.9em;
+}
+.data-table th {
+  background: var(--surface2);
+  color: var(--gold);
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 2px solid var(--gold-dim);
+  font-weight: 700;
+}
+.data-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.data-table tr:hover td {
+  background: rgba(245,166,35,0.05);
+}
+
+/* Tags */
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: 700;
+  margin: 2px 4px;
+}
+.tag-green { background: rgba(74,222,128,0.15); color: var(--green); }
+.tag-red { background: rgba(248,113,113,0.15); color: var(--red); }
+.tag-blue { background: rgba(96,165,250,0.15); color: var(--blue); }
+.tag-purple { background: rgba(167,139,250,0.15); color: var(--purple); }
+.tag-gold { background: rgba(245,166,35,0.15); color: var(--gold); }
+.tag-cyan { background: rgba(34,211,238,0.15); color: var(--cyan); }
+.tag-orange { background: rgba(251,146,60,0.15); color: var(--orange); }
+
+/* Meter bars */
+.meter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+.meter-label {
+  width: 140px;
+  font-size: 0.85em;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.meter-bar {
+  flex: 1;
+  height: 24px;
+  background: var(--surface2);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.meter-fill {
+  height: 100%;
+  border-radius: 12px;
+  transition: width 0.8s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  font-size: 0.7em;
+  font-weight: 700;
+  color: #000;
+}
+
+/* Grid layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+@media (max-width: 800px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* KPI cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+.kpi .number {
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1;
+}
+.kpi .label {
+  color: var(--text-dim);
+  font-size: 0.8em;
+  margin-top: 6px;
+}
+
+/* Callout */
+.callout {
+  background: rgba(245,166,35,0.08);
+  border-left: 4px solid var(--gold);
+  padding: 16px 20px;
+  border-radius: 0 12px 12px 0;
+  margin: 16px 0;
+}
+.callout.red {
+  background: rgba(248,113,113,0.08);
+  border-left-color: var(--red);
+}
+.callout.green {
+  background: rgba(74,222,128,0.08);
+  border-left-color: var(--green);
+}
+.callout.blue {
+  background: rgba(96,165,250,0.08);
+  border-left-color: var(--blue);
+}
+.callout strong { color: var(--gold); }
+.callout.red strong { color: var(--red); }
+.callout.green strong { color: var(--green); }
+.callout.blue strong { color: var(--blue); }
+
+/* Accordion */
+.accordion { margin: 12px 0; }
+.accordion-header {
+  background: var(--surface2);
+  padding: 14px 20px;
+  cursor: pointer;
+  border-radius: 10px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.accordion-header:hover { border-color: var(--gold); }
+.accordion-header .arrow { transition: transform 0.3s; }
+.accordion-header.open .arrow { transform: rotate(180deg); }
+.accordion-body {
+  display: none;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+}
+.accordion-body.open { display: block; }
+
+/* Lists */
+.insight-list { list-style: none; padding: 0; }
+.insight-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+}
+.insight-list li:last-child { border-bottom: none; }
+.insight-list .bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+/* Timeline */
+.timeline { position: relative; padding-left: 30px; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 24px;
+}
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -26px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--bg);
+}
+.timeline-item h4 { color: var(--gold); margin-bottom: 4px; }
+.timeline-item p { color: var(--text-dim); font-size: 0.9em; }
+
+p { margin-bottom: 12px; }
+strong { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>AI Landscape Intelligence Report</h1>
+  <p class="subtitle">Comprehensive Analysis · Gemini 4 · Grok 5 · GPT 5.2 · Claude 4.6 · Antigravity · MCP</p>
+  <div class="date-badge">March 20, 2026 · JayTee / VibeForge Studios</div>
+</div>
+
+<div class="nav" id="nav">
+  <button class="active" onclick="showSection('overview')">📊 Overview</button>
+  <button onclick="showSection('models')">🧠 Model Intel</button>
+  <button onclick="showSection('benchmarks')">📈 Benchmarks</button>
+  <button onclick="showSection('pricing')">💰 Pricing</button>
+  <button onclick="showSection('infra')">🏗️ Infrastructure</button>
+  <button onclick="showSection('agentic')">🤖 Agentic Future</button>
+  <button onclick="showSection('risks')">⚠️ Risks</button>
+  <button onclick="showSection('martell')">🔥 Dan Martell Analysis</button>
+  <button onclick="showSection('products')">🚀 Product Implications</button>
+  <button onclick="showSection('content')">🔄 Content Flywheel</button>
+  <button onclick="showSection('brain')">🧠 Founder Brain Updates</button>
+  <button onclick="showSection('projections')">🔮 Projections</button>
+  <button onclick="showSection('contrarian')">🎯 Contrarian Takes</button>
+  <button onclick="showSection('actions')">⚡ 90-Day Actions</button>
+  <button onclick="showSection('fullstack')">🏗️ Full Stack Intel</button>
+  <button onclick="showSection('vibeforge')">⚔️ VibeForge vs Antigravity</button>
+  <button onclick="showSection('vce')">💸 VCE Cost Engine</button>
+  <button onclick="showSection('moats')">🏰 Product Moats</button>
+  <button onclick="showSection('execpack')">👔 Exec Agent Pack</button>
+  <button onclick="showSection('contentblitz')">📢 Content Blitz</button>
+</div>
+
+<!-- ==================== OVERVIEW ==================== -->
+<div class="section active" id="sec-overview">
+  <h2>Executive Overview</h2>
+  <p class="section-desc">The AI landscape as of March 2026 — distilled from 4 major source transcripts covering every frontier model, tool, and infrastructure play.</p>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="number" style="color:var(--gold)">6</div><div class="label">Frontier Models Analyzed</div></div>
+    <div class="kpi"><div class="number" style="color:var(--green)">6T</div><div class="label">Max Params (Grok 5 Rumored)</div></div>
+    <div class="kpi"><div class="number" style="color:var(--blue)">2M</div><div class="label">Max Context Window (Tokens)</div></div>
+    <div class="kpi"><div class="number" style="color:var(--purple)">550K</div><div class="label">Max GPU Cluster (Colossus 2)</div></div>
+    <div class="kpi"><div class="number" style="color:var(--cyan)">$3/M</div><div class="label">Cheapest API (xAI Input)</div></div>
+    <div class="kpi"><div class="number" style="color:var(--red)">98.7%</div><div class="label">Top Benchmark (GPT 5.2 Telecom)</div></div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🗺️</span> The State of Play</h3>
+    <p>The AI race is no longer a two-player game. It's a five-way battle across fundamentally different strategies:</p>
+    <div class="grid-2" style="margin-top:16px">
+      <div class="callout">
+        <strong>Google (Gemini 4)</strong> — Ecosystem play. AI lives inside Gmail, Docs, Calendar, Cloud. The moat is integration depth, not raw benchmarks. Antigravity IDE is the developer surface. Colab MCP makes notebooks agentic.
+      </div>
+      <div class="callout blue">
+        <strong>xAI (Grok 5)</strong> — Brute-force compute + real-time data. 550K GPUs, X integration, native tool use. Betting that whoever has the most GPUs wins. The "rebellious" positioning cuts both ways.
+      </div>
+      <div class="callout green">
+        <strong>OpenAI (GPT 5.2)</strong> — Still the default. 98.7% on telecom benchmark. Heading toward full agentic workflows. The biggest install base and developer ecosystem.
+      </div>
+      <div class="callout" style="border-left-color:var(--purple)">
+        <strong>Anthropic (Claude 4.6)</strong> — Safety + depth. 1M token context, agentic planning in coding tools. Premium positioning at $5/$25 per million tokens. The "trust" play.
+      </div>
+    </div>
+    <div class="callout" style="border-left-color:var(--cyan); margin-top:12px">
+      <strong>Open Source (Mistral, Llama)</strong> — Zero cost per token. The democratization layer. Won't win on benchmarks but wins on accessibility and customization.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">💡</span> The Single Most Important Insight</h3>
+    <p>Every transcript points to the same inflection: <strong>AI is transitioning from "chat interface" to "operating system layer."</strong></p>
+    <p>Google's Antigravity isn't just an IDE — it's the first serious attempt at making AI a native development environment with built-in Firebase, browser agents, skills, workflows, and MCP integration. When you combine that with Gemini inside the full Google Workspace, Grok trained on real-time X data, and Claude operating as a code agent, the pattern is clear:</p>
+    <div class="callout green">
+      <strong>The value isn't in the model — it's in what the model can touch.</strong> Context windows, tool use, ecosystem integration, and agentic planning are now more important than raw benchmark scores. The next wave of products will be built on top of these capabilities, not competing with them.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODEL INTEL ==================== -->
+<div class="section" id="sec-models">
+  <h2>Model Intelligence Deep Dive</h2>
+  <p class="section-desc">Everything extracted about each frontier model from the transcripts.</p>
+
+  <div class="card">
+    <h3><span class="icon">🔵</span> Gemini 4 (Google)</h3>
+    <table class="data-table">
+      <tr><th>Attribute</th><th>Detail</th></tr>
+      <tr><td>Key Strength</td><td>Ecosystem integration — lives inside Gmail, Docs, Calendar, Cloud. "Agentic possibilities multiply exponentially" when AI is embedded in your workflow tools.</td></tr>
+      <tr><td>Reasoning</td><td>Advanced reasoning across multiple domains: math, science, language, code, visual puzzles</td></tr>
+      <tr><td>Agentic</td><td>Tool use for multi-step workflows — passing documents, calling APIs, drafting communications, booking calendar slots autonomously</td></tr>
+      <tr><td>Multimodal</td><td>Text, images, video, audio, potentially 3D spatial data</td></tr>
+      <tr><td>Context Window</td><td>Up to 1M tokens (Gemini Pro)</td></tr>
+      <tr><td>Pricing</td><td>Free tier → $250/month for Ultra access</td></tr>
+      <tr><td>AGI Assessment</td><td>"Not AGI, but one of the most significant steps toward it." Passes: multi-domain reasoning, agentic tool use, multimodal generalization. Fails: self-improvement, intrinsic motivation, real-world grounding.</td></tr>
+      <tr><td>Mac App</td><td>Native macOS Gemini app reportedly in internal testing. Could integrate with Apple's Core apps (Calendar, Photos). Apple partnership announced ~1 month ago.</td></tr>
+    </table>
+    <div class="callout red">
+      <strong>Risk Flags:</strong> Hallucinations still present. Past bias incidents (Stanford HAI: Benedict Cumberbatch as China's emperor, historically inaccurate image generation). Google themselves advise users not to input confidential material — "the company building the AI is telling you to be careful what you feed it."
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">⚡</span> Grok 5 (xAI / Musk)</h3>
+    <table class="data-table">
+      <tr><th>Attribute</th><th>Detail</th></tr>
+      <tr><td>Status</td><td>NOT officially announced. No press release, model card, or blog post. Based on Musk's public statements + analyst reports.</td></tr>
+      <tr><td>Parameters</td><td>Rumored 1.7T — 6T (MoE architecture). Would be largest MoE model ever built.</td></tr>
+      <tr><td>Training Infra</td><td>Colossus 2: 550K+ GPUs (3x the 200K that trained Grok 4)</td></tr>
+      <tr><td>Context Window</td><td>1M — 2M tokens expected (Grok 4.1 already at 2M)</td></tr>
+      <tr><td>Multimodal</td><td>Video and audio processing built directly into model (not just text+images like Grok 4)</td></tr>
+      <tr><td>Truth Mode 2.0</td><td>Built-in verification engine — cross-references claims against sources in real time. Model fact-checks itself before answering.</td></tr>
+      <tr><td>Architecture</td><td>Mixture of Experts. Only 2 experts active per token out of full set. 314B params knowledge → inference cost of much smaller model.</td></tr>
+      <tr><td>X Integration</td><td>Real-time social data, trending topics, breaking news. Unique data advantage.</td></tr>
+      <tr><td>Ecosystem</td><td>Potential ties to Tesla (self-driving data), SpaceX. Musk's full portfolio as training data.</td></tr>
+      <tr><td>Musk's AGI Claim</td><td>"10% and rising chance of being AGI" (October 2025 tweet)</td></tr>
+    </table>
+    <div class="callout">
+      <strong>Grok Evolution Timeline:</strong> Grok 1 (2024, 314B MoE) → Grok 1.5 (128K context) → Grok 2 (Aug 2024 beta) → Grok 3 (Feb 2025) → Grok 4 (Jul 2025, 200K GPUs, 10x RL compute) → Grok 5 (TBD)
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🟢</span> GPT 5.2 (OpenAI)</h3>
+    <table class="data-table">
+      <tr><th>Attribute</th><th>Detail</th></tr>
+      <tr><td>Telecom Benchmark</td><td>98.7% — multi-step tool-enabled task completion</td></tr>
+      <tr><td>Direction</td><td>Full agentic workflows — passing documents, calling APIs, drafting communications, booking calendar slots</td></tr>
+      <tr><td>Pricing</td><td>~$1.75 per 1,000 input tokens (most expensive mentioned)</td></tr>
+      <tr><td>Launch Context</td><td>OpenAI issued internal "code red" after Gemini 3, accelerated GPT 5.2 launch to Dec 2025</td></tr>
+      <tr><td>ChatGPT Plus</td><td>$20/month</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🟣</span> Claude 4.6 (Anthropic)</h3>
+    <table class="data-table">
+      <tr><th>Attribute</th><th>Detail</th></tr>
+      <tr><td>Context Window</td><td>1,000,000 tokens</td></tr>
+      <tr><td>Key Feature</td><td>Enhanced agentic planning in coding tools</td></tr>
+      <tr><td>ARC-AGI Score</td><td>Claude Op 4: 8.6% (for comparison, Grok 4 scored 15.9%)</td></tr>
+      <tr><td>API Pricing</td><td>$5/million input tokens, $25/million output tokens</td></tr>
+      <tr><td>Positioning</td><td>Safety + trust + depth. Premium but reliable.</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🔧</span> Google Antigravity IDE</h3>
+    <table class="data-table">
+      <tr><th>Feature</th><th>Detail</th></tr>
+      <tr><td>Core Concept</td><td>Visual IDE with AI coding agent. Describe what you want → it builds it. Not terminal-based — full visual editor.</td></tr>
+      <tr><td>Multiplayer</td><td>Real-time multiplayer app building — live syncing, shared data, proper backend</td></tr>
+      <tr><td>Firebase</td><td>Auto-detects when app needs DB/auth, sets up Cloud Firestore + Firebase Auth with user approval</td></tr>
+      <tr><td>Frameworks</td><td>React, Angular, Next.js out of the box</td></tr>
+      <tr><td>UI Libraries</td><td>Auto-imports Framer Motion, Shadcn for polish</td></tr>
+      <tr><td>API Keys</td><td>Built-in secrets manager for external service connections</td></tr>
+      <tr><td>Browser Agent</td><td>Built-in browser — can click, fill forms, navigate menus, test functionality</td></tr>
+      <tr><td>Multimodal</td><td>Screenshot-in → "build something like this." Image generation via Imagen model.</td></tr>
+      <tr><td>Skills System</td><td>Pre-written playbooks loaded when agent detects matching task. Local or global skills.</td></tr>
+      <tr><td>Workflows</td><td>Repeatable recipes — standardized multi-step processes the agent executes consistently</td></tr>
+      <tr><td>agent.md</td><td>Project-level instruction file injected into every conversation. Like CLAUDE.md.</td></tr>
+      <tr><td>Global User Rules</td><td>Cross-project preferences/memory. Injected everywhere.</td></tr>
+      <tr><td>Permissions</td><td>Default: asks before significant actions. Can enable auto-execution. "safe_to_auto_run" internal attribute.</td></tr>
+      <tr><td>Scale</td><td>"Hundreds of thousands of apps" built internally in past few months</td></tr>
+    </table>
+    <div class="callout green">
+      <strong>This is the most tactically important section.</strong> Antigravity's architecture (skills, workflows, agent.md, global rules, MCP) maps almost 1:1 to the composable agent pattern JayTee is already building toward.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">📓</span> Google Colab MCP Server</h3>
+    <p>Turns Google Colab into a tool AI agents can actually control. Instead of copy-paste-run-fix loops, agents can create, edit, and run Python notebooks directly.</p>
+    <table class="data-table">
+      <tr><th>Capability</th><th>Detail</th></tr>
+      <tr><td>Protocol</td><td>MCP (Model Context Protocol) — standard for AI ↔ external tool connection</td></tr>
+      <tr><td>Actions</td><td>Create notebooks, add cells (markdown + code), install packages, run code, read results</td></tr>
+      <tr><td>Architecture</td><td>Agent runs locally → code executes in Colab cloud</td></tr>
+      <tr><td>State</td><td>Maintains notebook state — variables persist across cells</td></tr>
+      <tr><td>Compatible With</td><td>Claude Code, Gemini CLI, custom setups via UVX/NPX</td></tr>
+      <tr><td>Repo</td><td>google-colab/colab-mcp</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== BENCHMARKS ==================== -->
+<div class="section" id="sec-benchmarks">
+  <h2>Benchmark Comparison</h2>
+  <p class="section-desc">Every benchmark number extracted from the transcripts, visualized.</p>
+
+  <div class="card">
+    <h3><span class="icon">📊</span> Head-to-Head Benchmark Data</h3>
+    <table class="data-table">
+      <tr><th>Benchmark</th><th>Grok 1.5</th><th>GPT 4</th><th>Grok 4</th><th>Claude Op 4</th><th>GPT 5.2</th></tr>
+      <tr><td>MMLU</td><td>81.3%</td><td>86.8%</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>Math</td><td>50.6%</td><td>61.0%</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>HumanEval (Coding)</td><td>74.1%</td><td>84.9%</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>ARC-AGI-V2</td><td>—</td><td>—</td><td>15.9%</td><td>8.6%</td><td>—</td></tr>
+      <tr><td>Humanity's Last Exam</td><td>—</td><td>—</td><td>50.7%</td><td>—</td><td>—</td></tr>
+      <tr><td>US Math Olympiad</td><td>—</td><td>~37-38%</td><td>61.9%</td><td>—</td><td>—</td></tr>
+      <tr><td>Telecom Benchmark</td><td>—</td><td>—</td><td>—</td><td>—</td><td>98.7%</td></tr>
+    </table>
+    <div class="callout">
+      <strong>Key Pattern:</strong> Grok catches up on standard benchmarks, then pulls ahead on novel, hard, multi-step reasoning tasks. That's the RL (reinforcement learning) training showing its value. Grok 4 used 10x more RL compute than any rival.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">📏</span> Context Window Comparison</h3>
+    <div class="meter-row">
+      <span class="meter-label">GPT 4o</span>
+      <div class="meter-bar"><div class="meter-fill" style="width:6.4%;background:var(--green)">128K</div></div>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Claude 3.5</span>
+      <div class="meter-bar"><div class="meter-fill" style="width:10%;background:var(--purple)">200K</div></div>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Claude 4.6</span>
+      <div class="meter-bar"><div class="meter-fill" style="width:50%;background:var(--purple)">1M</div></div>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Gemini Pro</span>
+      <div class="meter-bar"><div class="meter-fill" style="width:50%;background:var(--blue)">1M</div></div>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Grok 4.1</span>
+      <div class="meter-bar"><div class="meter-fill" style="width:100%;background:var(--gold)">2M</div></div>
+    </div>
+    <div class="callout red" style="margin-top:16px">
+      <strong>Reality Check:</strong> "Having a big window doesn't automatically mean the model uses it well." Performance on ultra-long context tends to degrade, especially when relevant info is buried in the middle. 2M tokens ≈ 15 novels — but retrieval accuracy matters more than window size.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PRICING ==================== -->
+<div class="section" id="sec-pricing">
+  <h2>Pricing Intelligence</h2>
+  <p class="section-desc">Every pricing data point from the transcripts.</p>
+
+  <div class="card">
+    <h3><span class="icon">💳</span> API Pricing Comparison</h3>
+    <table class="data-table">
+      <tr><th>Provider</th><th>Input (per M tokens)</th><th>Output (per M tokens)</th><th>Notes</th></tr>
+      <tr><td style="color:var(--gold)">xAI (Grok)</td><td>$3.00</td><td>$15.00</td><td>$175/mo free API credits</td></tr>
+      <tr><td style="color:var(--purple)">Anthropic (Claude 4.6)</td><td>$5.00</td><td>$25.00</td><td>Premium positioning</td></tr>
+      <tr><td style="color:var(--green)">OpenAI (GPT 5.2)</td><td>~$1,750/M*</td><td>—</td><td>*$1.75 per 1K tokens = $1,750/M. Likely a transcript error or refers to premium tier.</td></tr>
+      <tr><td style="color:var(--cyan)">Mistral (Open Source)</td><td>$0</td><td>$0</td><td>Self-hosted. Compute costs only.</td></tr>
+    </table>
+    <div class="callout">
+      <strong>Note on OpenAI pricing:</strong> The transcript states "$1.75 per thousand input tokens" which would be extremely expensive ($1,750/M). This is likely referencing a premium/fine-tuned tier or a transcript transcription error. Standard GPT-4o pricing is significantly lower. Always verify current pricing directly.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🎫</span> Consumer Subscription Tiers</h3>
+    <table class="data-table">
+      <tr><th>Product</th><th>Price</th><th>What You Get</th></tr>
+      <tr><td>Google Gemini</td><td>Free → $250/mo</td><td>Tiered: free basic → Ultra access at $250</td></tr>
+      <tr><td>Super Grok</td><td>$30/mo</td><td>X integration, extended capabilities</td></tr>
+      <tr><td>ChatGPT Plus</td><td>$20/mo</td><td>GPT-4 access, DALL-E, browsing</td></tr>
+    </table>
+    <div class="callout green">
+      <strong>Market Split:</strong> "The market is splitting between premium closed models and accessible open alternatives." This is the key strategic dynamic. Premium = closed, proprietary, API-priced. Accessible = open-source, self-hosted, zero marginal cost. Products that bridge both worlds (like Founder Brain) have an interesting positioning opportunity.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== INFRASTRUCTURE ==================== -->
+<div class="section" id="sec-infra">
+  <h2>Infrastructure & Compute Arms Race</h2>
+  <p class="section-desc">The numbers behind the models.</p>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="number" style="color:var(--gold)">150MW</div><div class="label">Memphis Data Center Power</div></div>
+    <div class="kpi"><div class="number" style="color:var(--red)">$25K</div><div class="label">Per H100 GPU</div></div>
+    <div class="kpi"><div class="number" style="color:var(--blue)">$2.5B</div><div class="label">Colossus 1 Hardware Cost</div></div>
+    <div class="kpi"><div class="number" style="color:var(--purple)">550K</div><div class="label">Colossus 2 GPUs (Rumored)</div></div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🖥️</span> xAI Compute Timeline</h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <h4>Colossus 1 — Grok 4 Training</h4>
+        <p>100K–200K Nvidia H100 GPUs. 150MW dedicated data center in Memphis, TN. Custom training stack: JAX + Rust + Kubernetes. Automatic failure recovery, dynamic workload orchestration, spot instance recovery.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>Scale-Up — Grok 4 Final Training</h4>
+        <p>Expanded to 200K GPUs by leasing from Oracle and AWS. Used "10x more reinforcement learning compute than any rival" per Jimmy Ba (xAI co-founder).</p>
+      </div>
+      <div class="timeline-item">
+        <h4>Colossus 2 — Grok 5 (Rumored)</h4>
+        <p>550K+ GPUs. ~3x the compute firepower. Electricity costs "tens of millions of dollars per month." Training costs "could rival the GDP of a small country."</p>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>The Moat Nobody Talks About:</strong> "This is why only a handful of organizations on earth can play this game." The real barrier isn't the architecture (MoE is well-understood) — it's the infrastructure. You cannot replicate Grok's training on your laptop. The moat is compute, not code.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">⚖️</span> What This Means for Builders</h3>
+    <p>The infrastructure war has a direct implication for app builders: <strong>you are building on top of multi-billion dollar platforms.</strong> The models are the new operating systems. Your apps are the new software layer. The question isn't "which model is best" — it's "which platform's agentic capabilities give me the most leverage for my specific use case?"</p>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--gold)"></div><div>Google = best if your app lives in the Google ecosystem (Workspace, Firebase, Cloud)</div></li>
+      <li><div class="bullet" style="background:var(--blue)"></div><div>xAI = best if you need real-time social/market data or massive context ingestion</div></li>
+      <li><div class="bullet" style="background:var(--green)"></div><div>OpenAI = best for broadest developer ecosystem and tool integration</div></li>
+      <li><div class="bullet" style="background:var(--purple)"></div><div>Anthropic = best for reliability-critical, trust-sensitive applications</div></li>
+      <li><div class="bullet" style="background:var(--cyan)"></div><div>Open Source = best for cost-sensitive, customizable, privacy-first deployments</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== AGENTIC ==================== -->
+<div class="section" id="sec-agentic">
+  <h2>The Agentic Future</h2>
+  <p class="section-desc">The transcripts converge on one theme: AI assistants are becoming AI employees.</p>
+
+  <div class="card">
+    <h3><span class="icon">🤖</span> The "AI Assistant → Digital Employee" Shift</h3>
+    <p>Multiple transcripts describe the same transition with different examples:</p>
+    <div class="grid-2">
+      <div>
+        <h4 style="color:var(--gold);margin-bottom:8px">What AI Assistants Do (Now)</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--text-dim)"></div><div>Answer questions when asked</div></li>
+          <li><div class="bullet" style="background:var(--text-dim)"></div><div>Generate text/code on demand</div></li>
+          <li><div class="bullet" style="background:var(--text-dim)"></div><div>Require human in the loop for every step</div></li>
+          <li><div class="bullet" style="background:var(--text-dim)"></div><div>Single-turn interactions</div></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--green);margin-bottom:8px">What AI Employees Do (Coming)</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--green)"></div><div>Pass documents between systems</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>Call APIs autonomously</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>Draft communications and book calendar slots</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>Multi-step task completion with tool use</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>Self-verify outputs (Truth Mode 2.0)</div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🔧</span> Antigravity's Agent Architecture — A Blueprint</h3>
+    <p>Google Antigravity reveals the emerging standard for agentic development environments:</p>
+    <table class="data-table">
+      <tr><th>Component</th><th>Antigravity</th><th>Your Equivalent (Founder Brain)</th></tr>
+      <tr><td>Project Context</td><td>agent.md — injected into every conversation</td><td>CLAUDE.md — already doing this</td></tr>
+      <tr><td>Global Rules</td><td>User Rules — cross-project preferences</td><td>Memory system + user preferences</td></tr>
+      <tr><td>Skills</td><td>Pre-written playbooks loaded by task type</td><td>9 module prompts with framework stacks</td></tr>
+      <tr><td>Workflows</td><td>Repeatable multi-step recipes</td><td>Quick Actions in modules.js</td></tr>
+      <tr><td>Tool Use</td><td>File read/write, terminal, browser agent</td><td>API calls via services/ai.js</td></tr>
+      <tr><td>Permissions</td><td>Approve/auto-execute with safe_to_auto_run</td><td>—</td></tr>
+      <tr><td>Visual Artifacts</td><td>Live preview of built apps</td><td>HTML test file preview</td></tr>
+    </table>
+    <div class="callout green">
+      <strong>Key Insight:</strong> JayTee's Founder Brain architecture already mirrors Google's Antigravity pattern. The 9 modules are skills. The quick actions are workflows. CLAUDE.md is agent.md. This validates the composable-agent-first design philosophy.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🔗</span> MCP — The Connective Tissue</h3>
+    <p>Model Context Protocol is emerging as the standard that lets AI agents interact with external tools in a clean, standardized way. The Colab MCP Server is Google's first major contribution to this ecosystem.</p>
+    <p><strong>Why this matters for builders:</strong> If you build your tools/modules as MCP-compatible servers, any AI agent (Claude, Gemini, custom) can use them. This is the composability layer that makes the "everything is a potential agent/skill/tool/plugin" philosophy real.</p>
+  </div>
+</div>
+
+<!-- ==================== RISKS ==================== -->
+<div class="section" id="sec-risks">
+  <h2>Risk Analysis</h2>
+  <p class="section-desc">Every risk, limitation, and concern mentioned across all transcripts.</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3><span class="icon">🎭</span> Hallucinations</h3>
+      <p>Every frontier model still makes things up. "Confidently presents false information as fact, especially on obscure or ambiguous topics."</p>
+      <p><strong>Mitigation:</strong> Always include a verification step for anything that matters — business decisions, research, client-facing work.</p>
+      <p><strong>Grok's approach:</strong> Truth Mode 2.0 attempts formal verification — the model fact-checks itself before presenting answers. If this works at scale, it's a genuine breakthrough.</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon">⚖️</span> Bias</h3>
+      <p>Stanford HAI documented cases where Gemini "suggested Benedict Cumberbatch as China's last emperor" and generated "historically inaccurate images that showed a complete disconnect from cultural and demographic context."</p>
+      <p><strong>Grok specific:</strong> Grok 3 had a public antisemitism controversy. The "rebellious persona" makes it less predictable than conservative alternatives.</p>
+      <p><strong>Reality:</strong> "Bias doesn't disappear overnight. It takes years of careful, intentional work."</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon">🔒</span> Privacy</h3>
+      <p>Gemini's deep integration with Google Workspace means it can access emails, documents, calendars, shared folders.</p>
+      <p><strong>Google's own warning:</strong> "Unless permissions are locked down tight, an AI agent could inadvertently expose sensitive data." Google advised users "not to input confidential or proprietary material."</p>
+      <p><strong>Enterprise implication:</strong> Data governance strategy must be in place before handing sensitive info to any AI model.</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon">🎯</span> Safety & Consistency</h3>
+      <p>Grok's rebellious persona = fun but unpredictable. For enterprise use cases where reliability is non-negotiable, this is a real concern.</p>
+      <p><strong>Jailbreaking:</strong> "Every frontier model can be jailbroken with enough creativity."</p>
+      <p><strong>Grok's improvements:</strong> SOC2 + GDPR compliance for enterprise users. Multi-layer filtering and red teaming. Formal verification experiments for certain outputs.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🤔</span> The AGI Reality Check</h3>
+    <p>Musk claims Grok 5 has "10% and rising chance of being AGI." The transcript provides a useful framework for evaluating this:</p>
+    <div class="grid-2">
+      <div>
+        <h4 style="color:var(--green);margin-bottom:8px">What Gemini 4 / Grok 5 CAN Do</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--green)"></div><div>Advanced reasoning across multiple domains</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>Agentic tool use — plan and execute multi-step workflows</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>Multimodal generalization (text, images, video, audio)</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>Score 50%+ on "impossible" benchmarks</div></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--red);margin-bottom:8px">What They CAN'T Do (Not AGI)</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--red)"></div><div>True self-improvement (can't modify own code or retrain)</div></li>
+          <li><div class="bullet" style="background:var(--red)"></div><div>Intrinsic motivation (no curiosity or goals of its own)</div></li>
+          <li><div class="bullet" style="background:var(--red)"></div><div>Real-world grounding (can't physically interact or learn from experience)</div></li>
+          <li><div class="bullet" style="background:var(--red)"></div><div>Autonomous research ability or genuine creativity</div></li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Transcript's Best Line:</strong> "Scoring high on even the hardest exams is necessary but not sufficient for AGI. A model can ace every test we throw at it and still not possess autonomous research ability, genuine creativity, or the kind of flexible learning that defines human intelligence."
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DAN MARTELL ANALYSIS ==================== -->
+<div class="section" id="sec-martell">
+  <h2>Dan Martell Framework Analysis</h2>
+  <p class="section-desc">Running every development through Dan's frameworks to extract operator-level intelligence.</p>
+
+  <div class="card">
+    <h3><span class="icon">📊</span> DRIP Matrix — What Changes for You</h3>
+    <table class="data-table">
+      <tr><th>Category</th><th>Gemini 4 / Antigravity</th><th>Grok 5</th><th>MCP / Agentic</th></tr>
+      <tr>
+        <td style="color:var(--gold);font-weight:700">DELEGATE</td>
+        <td>Full app scaffolding with Firebase backend. Browser testing. UI polish with Framer/Shadcn auto-import.</td>
+        <td>Real-time market/social research. Competitive monitoring via X data. Long-context document analysis (2M tokens).</td>
+        <td>Multi-step workflows: "analyze CSV, make regression plot, iterate on errors" — all hands-off.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--blue);font-weight:700">REPLACE</td>
+        <td>Manual Firebase setup. Copy-paste vibe coding workflows. Separate browser testing tools.</td>
+        <td>Manual trend research. Social listening tools. Human fact-checking for certain domains.</td>
+        <td>The copy-paste loop between AI chat and code environments. Manual notebook management.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green);font-weight:700">INVEST</td>
+        <td>Learn Antigravity's skills/workflow system. Build agent.md templates. Master the visual IDE workflow.</td>
+        <td>Grok API integration for real-time data features. MoE architecture understanding for cost optimization.</td>
+        <td>MCP server development. Building your tools as MCP-compatible endpoints. Agent orchestration patterns.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--purple);font-weight:700">PRODUCE</td>
+        <td>Sell Antigravity-built apps as a service. Create skill packs for specific industries. Rapid prototyping service.</td>
+        <td>Real-time intelligence products. Social signal-driven SaaS features. Truth-verified content generation.</td>
+        <td>MCP-compatible tools/plugins marketplace. Agent-as-a-service offerings. Composable AI workflow products.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🎯</span> Capped vs. Uncapped Payoff Analysis</h3>
+    <table class="data-table">
+      <tr><th>Development</th><th>Rating</th><th>Why</th></tr>
+      <tr>
+        <td>Benchmark improvements (MMLU, math scores)</td>
+        <td><span class="tag tag-red">CAPPED</span></td>
+        <td>Diminishing returns. Going from 50% → 60% on a math olympiad doesn't change what you can build. The gap between "very good" and "slightly better" doesn't create new product categories.</td>
+      </tr>
+      <tr>
+        <td>Context window expansion (1M → 2M)</td>
+        <td><span class="tag tag-orange">MOSTLY CAPPED</span></td>
+        <td>Useful for specific use cases (legal docs, code audits) but performance degrades on ultra-long context. Most real-world tasks don't need 2M tokens. The value asymptotes fast.</td>
+      </tr>
+      <tr>
+        <td>Native tool use / agentic capabilities</td>
+        <td><span class="tag tag-green">UNCAPPED</span></td>
+        <td>This is the compound interest of AI. Every tool the model can touch multiplies what it can do. The combinatorial explosion of agent + tools + data = exponential capability growth.</td>
+      </tr>
+      <tr>
+        <td>MCP / standardized agent protocols</td>
+        <td><span class="tag tag-green">UNCAPPED</span></td>
+        <td>Network effects. Every MCP-compatible tool makes every AI agent more capable. This is the USB-C of AI — standardization creates ecosystems.</td>
+      </tr>
+      <tr>
+        <td>Ecosystem integration (Google Workspace, X data)</td>
+        <td><span class="tag tag-green">UNCAPPED</span></td>
+        <td>The "AI that lives where you work" advantage compounds. Every new integration point creates new automation possibilities. Google has the strongest position here.</td>
+      </tr>
+      <tr>
+        <td>Skills/Workflows/agent.md pattern</td>
+        <td><span class="tag tag-green">UNCAPPED</span></td>
+        <td>Reusable, composable, shareable. Once you build a skill, it works forever and can be shared. This is exactly the modular-everything philosophy.</td>
+      </tr>
+      <tr>
+        <td>GPU scaling (550K GPUs)</td>
+        <td><span class="tag tag-red">CAPPED (for builders)</span></td>
+        <td>Matters for model providers, not app builders. You can't compete on compute. You compete on application layer. Let them burn the billions — you build on top.</td>
+      </tr>
+      <tr>
+        <td>Truth Mode 2.0 / self-verification</td>
+        <td><span class="tag tag-gold">POTENTIALLY UNCAPPED</span></td>
+        <td>If formal verification actually works at scale, it solves the hallucination problem. That's a category-defining capability. But it's unproven at scale.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">😫</span> Pain-First Validation — What Hurts?</h3>
+    <p>Reading between the lines of what these transcripts describe, here are the real pain points in the market:</p>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>"I built an app with AI and it fell apart after the demo."</strong> Antigravity exists because vibe-coded apps look good for a minute then fail. The gap between "impressive prototype" and "production app" is where real pain lives. VibeForge opportunity: be the bridge.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>"I don't know which AI to use for what."</strong> 6+ frontier models, each with different strengths. Founders are paralyzed by choice. Founder Brain opportunity: the decision engine that routes to the right tool.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>"AI is unreliable for client-facing work."</strong> Hallucinations + bias = trust gap. Every serious use case needs a verification layer. ChurnWise/Cerebra opportunity: verified AI outputs as a premium feature.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>"My AI can't touch my actual systems."</strong> Chat is easy, integration is hard. MCP exists to solve this but most users don't know it exists. Product opportunity: MCP-powered integrations as plug-and-play features.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>"I'm paying for 5 different AI subscriptions."</strong> $20 ChatGPT + $30 Grok + $250 Gemini Ultra + API costs = subscription fatigue. Pain-first opportunity: unified AI routing that picks the cheapest/best model per task.</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🎬</span> Director Check (10/80/10) for JayTee's Products</h3>
+    <div class="grid-2">
+      <div class="callout">
+        <strong>VibeForge Studios</strong><br>
+        <em>First 10%:</em> Define which AI platform (Antigravity? Claude? Multi-model?) powers each product line. Set the technical vision for "AI-native app studio."<br>
+        <em>80%:</em> AI agents build the scaffolding, Firebase backends, component libraries. Antigravity-style skills and workflows handle repeatable builds.<br>
+        <em>Final 10%:</em> Taste. Polish. The "this feels like a real product, not a vibe-coded toy" layer that only a human with design sense can deliver.
+      </div>
+      <div class="callout blue">
+        <strong>Founder Brain</strong><br>
+        <em>First 10%:</em> Decide: does Founder Brain become an MCP server? A skill pack? A standalone agent? The architectural direction matters more than the next feature.<br>
+        <em>80%:</em> AI generates module prompts, processes user input, runs framework analysis. The 9 modules are already 80%-ready.<br>
+        <em>Final 10%:</em> Calibration. Making sure Dan Solver actually gives Dan-quality advice. Testing edge cases. Founder-level judgment on output quality.
+      </div>
+      <div class="callout green">
+        <strong>ChurnWise / Cerebra AI</strong><br>
+        <em>First 10%:</em> Define how Cerebra uses the new agentic capabilities — can it autonomously trigger save offers, draft retention emails, route escalations?<br>
+        <em>80%:</em> AI handles churn prediction, cancellation flow logic, save offer generation, analytics dashboards.<br>
+        <em>Final 10%:</em> The human empathy layer. Making sure automated retention doesn't feel robotic. Edge case sensitivity.
+      </div>
+      <div class="callout" style="border-left-color:var(--purple)">
+        <strong>Nemurium XR</strong><br>
+        <em>First 10%:</em> How does Gemini 4's 3D spatial data processing + multimodal capabilities change the XR creator tools roadmap?<br>
+        <em>80%:</em> AI-generated 3D assets, environment design, interaction scripting. Multimodal models can now process spatial data.<br>
+        <em>Final 10%:</em> Creative direction. The "this world feels alive" quality that separates good XR from great XR.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">📝</span> RCCF Prompts for Founder Brain Modules</h3>
+    <p>New prompts generated from transcript intelligence:</p>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        1. AI Model Router Prompt (New Quick Action) <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <strong>Role:</strong> You are an AI Model Selection Advisor who understands the current landscape of frontier models (Gemini 4, Grok 5, GPT 5.2, Claude 4.6, and open-source alternatives).<br><br>
+        <strong>Context:</strong> A founder needs to choose the right AI model/API for a specific use case. Models differ in: context window (128K–2M), pricing ($0–$25/M output), tool use maturity, ecosystem integration, safety/reliability, and real-time data access.<br><br>
+        <strong>Command:</strong> Given the user's use case: {{INPUT}}, recommend the optimal model with reasoning. Consider: cost sensitivity, reliability requirements, data privacy needs, integration requirements, real-time data needs, and context window demands.<br><br>
+        <strong>Format:</strong> Return: (1) Recommended model with confidence score, (2) Runner-up alternative, (3) Cost comparison, (4) Trade-offs to consider, (5) Integration steps.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        2. Agentic Workflow Designer (AI Systems Builder enhancement) <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <strong>Role:</strong> You are an Agentic Workflow Architect trained in MCP protocols, skill-based agent design (inspired by Google Antigravity's architecture), and the RCCF + PTCF prompting frameworks.<br><br>
+        <strong>Context:</strong> AI agents can now: read/write files, run terminal commands, browse the web, call APIs, manage databases, and chain multi-step workflows. The key building blocks are: Skills (task-specific playbooks), Workflows (repeatable recipes), Context Files (agent.md/CLAUDE.md), and MCP servers (standardized tool interfaces).<br><br>
+        <strong>Command:</strong> Design an agentic workflow for: {{INPUT}}. Break it into Skills, Workflows, Context requirements, and Tool integrations. Assess which steps need human approval vs auto-execution.<br><br>
+        <strong>Format:</strong> Return: (1) Workflow diagram (text), (2) Skills needed, (3) MCP tools required, (4) Permission boundaries, (5) Estimated time savings vs manual.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        3. Competitive Moat Analyzer (Business Builder enhancement) <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <strong>Role:</strong> You are a strategic analyst applying Dan Martell's Pain-First validation framework combined with competitive intelligence from the current AI landscape.<br><br>
+        <strong>Context:</strong> The AI market is splitting into premium closed models vs accessible open-source. Tool use and ecosystem integration matter more than raw benchmarks. The value is shifting from "best model" to "best application layer." Entry barriers are: compute (only for model training), ecosystem lock-in (Google Workspace), data moats (X/Twitter), and trust/safety (enterprise compliance).<br><br>
+        <strong>Command:</strong> Analyze the competitive moat for: {{INPUT}}. Apply Pain-First: is this solving real pain? Apply Capped/Uncapped: does the payoff compound? Identify defensibility vectors.<br><br>
+        <strong>Format:</strong> Return: (1) Pain validation score (1-10), (2) Capped/Uncapped assessment, (3) Moat strength (1-10), (4) Vulnerable flanks, (5) Recommended fortification moves.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        4. AI Subscription ROI Calculator (Time Buyback enhancement) <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <strong>Role:</strong> You are a time-value analyst using the DRIP Matrix to evaluate AI subscription ROI.<br><br>
+        <strong>Context:</strong> Current AI subscriptions: ChatGPT Plus ($20/mo), Super Grok ($30/mo), Gemini Ultra ($250/mo), Claude API ($5/$25 per M tokens), plus various tool subscriptions. Each has different strengths. Most founders over-subscribe and under-utilize.<br><br>
+        <strong>Command:</strong> Audit the user's AI tool stack: {{INPUT}}. For each subscription, classify into DRIP (Delegate/Replace/Invest/Produce). Calculate: time saved per month, cost per hour saved, and identify consolidation opportunities.<br><br>
+        <strong>Format:</strong> Return: (1) DRIP classification per tool, (2) Monthly time saved, (3) Cost-per-saved-hour, (4) Consolidation recommendations, (5) Optimal stack for this user's use cases.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        5. Truth-Verified Output Generator (Founder Mirror enhancement) <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <strong>Role:</strong> You are an Intelligent Fool — a truth-seeking advisor who applies Grok's Truth Mode philosophy to founder self-reflection.<br><br>
+        <strong>Context:</strong> AI hallucinations are real. The same principle applies to founder self-deception: we tell ourselves stories about our businesses that aren't grounded in data. The Intelligent Fool asks the "embarrassing" basics. Every claim needs verification against reality.<br><br>
+        <strong>Command:</strong> The founder claims: {{INPUT}}. Apply the Intelligent Fool framework. Cross-reference this claim against known startup patterns, common founder biases, and logical consistency. Verify or challenge each assumption.<br><br>
+        <strong>Format:</strong> Return: (1) Claim restated, (2) Verification status (Verified / Partially True / Unverified / Likely False), (3) Evidence for/against, (4) Blind spots identified, (5) The question you're afraid to ask yourself.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PRODUCT IMPLICATIONS ==================== -->
+<div class="section" id="sec-products">
+  <h2>Product Implications</h2>
+  <p class="section-desc">How each transcript development maps to JayTee's product portfolio.</p>
+
+  <div class="card">
+    <h3><span class="icon">🏭</span> VibeForge Studios</h3>
+    <div class="callout green">
+      <strong>Opportunity Level: HIGH</strong> — Antigravity validates the entire "AI-powered app studio" concept. But it also threatens it.
+    </div>
+    <p><strong>Threat:</strong> Google Antigravity is essentially a free AI app builder with Firebase, multiplayer, and production-quality output. If anyone can build an app by talking to Antigravity, why pay VibeForge?</p>
+    <p><strong>Counter-move:</strong> VibeForge's moat is taste, curation, and domain expertise. Antigravity builds generic apps. VibeForge builds apps with specific industry knowledge, battle-tested patterns, and production polish. Think: "VibeForge Skills" — pre-built Antigravity-compatible skill packs for specific verticals (SaaS, creator economy, music tech).</p>
+    <p><strong>Tactical:</strong> Build VibeForge's process as a set of skills/workflows that work inside Antigravity or Claude Code. Sell the expertise, not just the output.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🧠</span> Master Founder Brain</h3>
+    <div class="callout green">
+      <strong>Opportunity Level: VERY HIGH</strong> — The "AI model selection paralysis" pain point is massive and growing.
+    </div>
+    <p><strong>Current state:</strong> 9 modules with Dan Martell frameworks. Already mirrors the Antigravity skill/workflow pattern.</p>
+    <p><strong>Evolution path:</strong></p>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--gold)"></div><div><strong>Phase 1:</strong> Add AI landscape intelligence to relevant modules (AI Systems Builder, Business Builder). Use the data from these transcripts as a knowledge base.</div></li>
+      <li><div class="bullet" style="background:var(--blue)"></div><div><strong>Phase 2:</strong> Build a 10th module — "AI Model Router" — that helps founders choose the right model/tool for their task based on cost, capability, and use case.</div></li>
+      <li><div class="bullet" style="background:var(--green)"></div><div><strong>Phase 3:</strong> Make each module MCP-compatible. Founder Brain becomes a skill pack that works inside any AI coding environment (Claude Code, Antigravity, Cursor).</div></li>
+      <li><div class="bullet" style="background:var(--purple)"></div><div><strong>Phase 4:</strong> Multi-model routing. Different modules use different AI providers based on strength. Dan Solver → Claude (reasoning depth). Content Flywheel → Grok (real-time trends). AI Systems Builder → Gemini (ecosystem knowledge).</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🔄</span> ChurnWise / Cerebra AI</h3>
+    <div class="callout blue">
+      <strong>Opportunity Level: MEDIUM-HIGH</strong> — Agentic capabilities make autonomous churn intervention real.
+    </div>
+    <p><strong>What changes:</strong> With native tool use + agentic planning, Cerebra AI could: detect churn signals → draft personalized retention emails → trigger conditional save offers → book recovery calls → update CRM — all autonomously.</p>
+    <p><strong>Competitive angle:</strong> Use Truth Mode 2.0 philosophy — every churn prediction should come with a confidence score and verification. "We're 87% confident this user will churn because X, Y, Z" is more valuable than "this user might churn."</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🌐</span> Nemurium XR</h3>
+    <div class="callout" style="border-left-color:var(--purple)">
+      <strong>Opportunity Level: MEDIUM</strong> — Multimodal + 3D spatial data processing is coming but not here yet.
+    </div>
+    <p><strong>What changes:</strong> Gemini 4 claims multimodal generalization including "potentially 3D spatial data." If real, AI-generated XR environments become feasible. The creator economy platform could offer AI-assisted world-building.</p>
+    <p><strong>Timeline:</strong> This is 12-24 months out from being production-ready. Position now, build later.</p>
+  </div>
+</div>
+
+<!-- ==================== CONTENT FLYWHEEL ==================== -->
+<div class="section" id="sec-content">
+  <h2>Content Flywheel Fuel</h2>
+  <p class="section-desc">Collect → Create → Repurpose → Delegate. Every angle extracted from these transcripts.</p>
+
+  <div class="card">
+    <h3><span class="icon">📥</span> COLLECT — Key Data Points Worth Capturing</h3>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"GPT 5.2 hit 98.7% on the telecom benchmark" — concrete, shareable, surprising</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"Grok 4 was the first model to break 50% on Humanity's Last Exam" — milestone moment</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"xAI built a 150MW data center — the power consumption of a small city — dedicated to one AI model"</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"Google themselves advised users not to input confidential material" — trust-breaking quote</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"The company building the AI is telling you to be careful what you feed it" — perfect hook</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"OpenAI issued an internal code red" after Gemini 3 — drama, competitive dynamics</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"Grok 5 rumored at 6 trillion parameters" — jaw-drop number</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div>"The AI model that wins isn't just the smartest — it's the one people actually trust"</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">✍️</span> CREATE — Original Content Angles</h3>
+    <div class="grid-2">
+      <div>
+        <h4 style="color:var(--gold);margin-bottom:8px">Contrarian Hooks</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--red)"></div><div>"The AI that wins won't be the smartest — it'll be the most connected"</div></li>
+          <li><div class="bullet" style="background:var(--red)"></div><div>"Stop chasing benchmarks. Context windows don't matter if the model can't find what it needs."</div></li>
+          <li><div class="bullet" style="background:var(--red)"></div><div>"Google's biggest AI advantage has nothing to do with AI — it's Gmail"</div></li>
+          <li><div class="bullet" style="background:var(--red)"></div><div>"Musk says 10% AGI. I say 10% marketing."</div></li>
+          <li><div class="bullet" style="background:var(--red)"></div><div>"The real AI arms race isn't models — it's data centers that use more power than your city"</div></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--green);margin-bottom:8px">Educational Angles</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--green)"></div><div>"I mapped every AI model's strengths. Here's which one to use for what."</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>"The $250/mo AI vs the free one: when premium actually matters"</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>"MCP explained: the USB-C of AI that nobody's talking about"</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>"I used Dan Martell's DRIP Matrix to audit every AI tool. Here's what survived."</div></li>
+          <li><div class="bullet" style="background:var(--green)"></div><div>"Google Antigravity vs Claude Code vs Cursor: the real comparison"</div></li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:16px">
+      <div>
+        <h4 style="color:var(--blue);margin-bottom:8px">Founder-Specific Angles</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--blue)"></div><div>"How I built a 9-module AI command center as a solo founder"</div></li>
+          <li><div class="bullet" style="background:var(--blue)"></div><div>"My AI subscription costs $300/mo. Here's why it saves me $30K."</div></li>
+          <li><div class="bullet" style="background:var(--blue)"></div><div>"The Director Check: are you building or directing? (and why it matters now more than ever)"</div></li>
+          <li><div class="bullet" style="background:var(--blue)"></div><div>"AI can build your app. But can it build the right app? Pain-First says no."</div></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--purple);margin-bottom:8px">Hot Takes / Thread Starters</h4>
+        <ul class="insight-list">
+          <li><div class="bullet" style="background:var(--purple)"></div><div>"Everyone's talking about AGI. Nobody's talking about the $2.5B it costs to train one model."</div></li>
+          <li><div class="bullet" style="background:var(--purple)"></div><div>"Gemini lives in your email. Grok lives in your feed. Claude lives in your code. Where does YOUR AI live?"</div></li>
+          <li><div class="bullet" style="background:var(--purple)"></div><div>"Antigravity just made 'vibe coding' an actual job description"</div></li>
+          <li><div class="bullet" style="background:var(--purple)"></div><div>"Skills + Workflows + MCP = the composable AI stack nobody's building for yet"</div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">♻️</span> REPURPOSE — Format Breakdown</h3>
+    <table class="data-table">
+      <tr><th>Source Angle</th><th>Short-form (60s)</th><th>Thread/Carousel</th><th>Long-form</th></tr>
+      <tr><td>AI Model Comparison</td><td>"In 60 seconds: which AI to use for what"</td><td>6-slide carousel: one model per slide with use case</td><td>Full breakdown blog post with pricing tables</td></tr>
+      <tr><td>Benchmark Reality</td><td>"These numbers don't mean what you think"</td><td>Thread: 5 benchmark myths debunked</td><td>Deep-dive: benchmarks vs real-world performance</td></tr>
+      <tr><td>Antigravity breakdown</td><td>"Google just released an AI that builds full apps"</td><td>Thread: 8 features that change everything</td><td>Tutorial: building your first app with Antigravity</td></tr>
+      <tr><td>DRIP Matrix + AI</td><td>"Stop doing tasks AI can delegate"</td><td>Carousel: DRIP analysis of top 6 AI tools</td><td>Framework post: auditing your AI stack with Dan Martell</td></tr>
+      <tr><td>The trust problem</td><td>"Google says don't trust their own AI with secrets"</td><td>Thread: 5 AI trust red flags founders ignore</td><td>Essay: trust is the new moat in AI</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🤖</span> DELEGATE — What AI Can Auto-Generate</h3>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--cyan)"></div><div>Weekly AI landscape digest — auto-pull from X/news, summarize changes, flag what matters for your products</div></li>
+      <li><div class="bullet" style="background:var(--cyan)"></div><div>Benchmark tracker — monitor new model releases, auto-update comparison tables</div></li>
+      <li><div class="bullet" style="background:var(--cyan)"></div><div>Content repurposing — feed one long-form piece, generate 5 short-form variants automatically</div></li>
+      <li><div class="bullet" style="background:var(--cyan)"></div><div>Pricing alert system — track API pricing changes, flag cost optimization opportunities</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== FOUNDER BRAIN UPDATES ==================== -->
+<div class="section" id="sec-brain">
+  <h2>Founder Brain Module Updates</h2>
+  <p class="section-desc">Specific enhancements and new module candidates based on transcript intelligence.</p>
+
+  <div class="card">
+    <h3><span class="icon">🆕</span> New Module Candidate: AI Landscape Navigator (Module #10)</h3>
+    <table class="data-table">
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>ID</td><td>ai-navigator</td></tr>
+      <tr><td>Title</td><td>AI Landscape Navigator</td></tr>
+      <tr><td>Subtitle</td><td>Which AI, When, Why</td></tr>
+      <tr><td>Icon</td><td>🧭</td></tr>
+      <tr><td>Core Function</td><td>Routes founder decisions to the right AI model/tool based on use case, budget, and requirements. Maintains a living knowledge base of model capabilities, pricing, and trade-offs.</td></tr>
+      <tr><td>Key Frameworks</td><td>DRIP Matrix for tool evaluation + Capped/Uncapped for investment decisions + Pain-First for feature prioritization</td></tr>
+      <tr><td>Input</td><td>"I need to [task]. My budget is [X]. I care most about [reliability/speed/cost/integration]."</td></tr>
+      <tr><td>Output</td><td>Model recommendation + alternative + cost comparison + integration steps + trade-offs</td></tr>
+    </table>
+    <div class="callout green">
+      <strong>Why this module:</strong> Every transcript highlights the same pain: "I don't know which AI to use." This module solves that. It's unique to Founder Brain and directly maps to the intelligence in this report.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">⬆️</span> Existing Module Enhancements</h3>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        🤖 AI Systems Builder — Add Agentic Workflow Design <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p><strong>Current:</strong> Builds prompts in RCCF + PTCF formats, assesses Intelligent Hill level.</p>
+        <p><strong>Enhancement:</strong> Add an "Agentic Mode" that designs multi-step agent workflows. Input: "I want to automate X." Output: Skills needed, tools to connect, permission boundaries, MCP integration points. Uses the Antigravity architecture pattern (skills + workflows + context files) as a reference framework.</p>
+        <p><strong>Prompt addition:</strong> "When the user describes a multi-step automation, shift from single-prompt RCCF to multi-agent workflow design. Reference the MCP protocol for tool standardization. Map each step to the Intelligent Hill: which steps need zero-shot vs chain-of-thought vs full agent orchestration?"</p>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        🏗️ Business Builder — Add Competitive Landscape Intel <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p><strong>Current:</strong> Pain-first validation, competitive moat, AI tool recommendations.</p>
+        <p><strong>Enhancement:</strong> Integrate the AI competitive landscape data. When a user describes a business idea, the module should assess: "Is this competing with a feature that Gemini/GPT/Claude are building natively?" and "Where is the moat if the model providers offer this for free?"</p>
+        <p><strong>Key question to add:</strong> "Could an AI model provider subsume this as a built-in feature within 12 months? If yes, where's your defensibility?"</p>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        🔄 Content Flywheel — Add Trend-Reactive Content Mode <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p><strong>Current:</strong> 4-stage Collect→Create→Repurpose→Delegate with taste library.</p>
+        <p><strong>Enhancement:</strong> Add a "News Reactor" mode that takes an AI industry development (like these transcripts) and auto-generates content angles. Input: paste a news item or transcript. Output: 5 hooks, 3 contrarian takes, repurpose plan across formats, delegation instructions.</p>
+        <p><strong>Grok integration opportunity:</strong> Use Grok's real-time X data to identify trending topics, then feed them into the Content Flywheel for instant content ideation.</p>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        🪞 Founder Mirror — Add "Truth Mode" Self-Verification <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p><strong>Current:</strong> Capped/uncapped audit, Intelligent Fool, blind spot surfacing.</p>
+        <p><strong>Enhancement:</strong> Inspired by Grok's Truth Mode 2.0, add a "Founder Truth Mode" that cross-references the founder's claims against data. When a founder says "my market is $10B," the mirror should verify: source? methodology? Is this TAM, SAM, or SOM? Apply the same rigor AI models are starting to apply to their own outputs.</p>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        ⏰ Time Buyback — Add AI Tool ROI Calculator <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p><strong>Current:</strong> DRIP Matrix audit + DRAG integration.</p>
+        <p><strong>Enhancement:</strong> Add an "AI Stack Audit" mode. Input: list your AI subscriptions and what you use them for. Output: DRIP classification per tool, cost-per-saved-hour, consolidation recommendations, optimal stack. Uses pricing data from this report as reference.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PROJECTIONS ==================== -->
+<div class="section" id="sec-projections">
+  <h2>Projections & Trajectory Analysis</h2>
+  <p class="section-desc">Where this is heading based on the trajectories described in the transcripts.</p>
+
+  <div class="card">
+    <h3><span class="icon">🔮</span> 6 / 12 / 24 Month Projection Map</h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <h4>6 Months (September 2026)</h4>
+        <p><strong>Models:</strong> Grok 5 launches (if it hasn't already). GPT-6 rumors begin. Gemini 4 is in general availability with full workspace integration. Context windows stabilize around 2M as the standard.</p>
+        <p><strong>Agentic:</strong> MCP adoption accelerates. Major IDEs integrate MCP natively. The "skills + workflows + agent.md" pattern becomes an industry standard. Most serious AI coding tools support it.</p>
+        <p><strong>Pricing:</strong> API prices drop 30-50% from current levels. Free tiers expand. The race to the bottom on commoditized tasks is real.</p>
+        <p><strong>Builder implication:</strong> If you're not building agentic features into your products, you're falling behind. The window to be early on MCP-compatible tools is closing.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>12 Months (March 2027)</h4>
+        <p><strong>Models:</strong> The model layer commoditizes further. Differentiation shifts entirely to application layer, data moats, and ecosystem integration. Benchmark improvements become marginal.</p>
+        <p><strong>Agentic:</strong> AI employees are real for well-defined tasks: customer support, data analysis, content generation, code review. The "human in the loop" shifts from "every step" to "approval checkpoints."</p>
+        <p><strong>New category:</strong> "Agent orchestration platforms" emerge — tools that coordinate multiple AI agents working on different parts of a workflow. Think: project manager for AI agents.</p>
+        <p><strong>Builder implication:</strong> Your product's value is in the workflow design, domain expertise, and trust layer — not in the AI model underneath. Model-agnostic architectures win.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>24 Months (March 2028)</h4>
+        <p><strong>Models:</strong> Frontier models are commodity infrastructure, like cloud compute today. The question isn't "which model" but "which orchestration layer." Open source closes 90% of the gap with closed models for most tasks.</p>
+        <p><strong>Verification:</strong> Truth Mode-style self-verification becomes standard. Models that can prove their answers are correct become the enterprise default. This is the trust moat.</p>
+        <p><strong>Market structure:</strong> Three layers: (1) Model providers (Google, OpenAI, xAI, Anthropic, open source), (2) Platform/orchestration layer (agent tools, MCP ecosystems), (3) Application layer (domain-specific products built on top). Layer 3 is where the most value accrues for builders.</p>
+        <p><strong>Builder implication:</strong> Founder Brain, VibeForge, ChurnWise — all should be firmly in Layer 3 with model-agnostic architectures and deep domain expertise as the moat.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">⚠️</span> What the Transcripts Get Wrong</h3>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>Benchmark worship.</strong> Scoring 98.7% on a telecom benchmark doesn't mean GPT 5.2 can actually handle telecom operations. Benchmarks are proxies, not proof. The gap between "performs well on test" and "works reliably in production" is still enormous.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>AGI hype.</strong> Musk's "10% chance of AGI" is a marketing number, not a scientific assessment. No model has: self-improvement, intrinsic motivation, or real-world grounding. These aren't incremental improvements — they're qualitatively different capabilities. We're years away, if ever.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>Context window conflation.</strong> 2M tokens sounds impressive but "performance degrades on ultra-long context, especially when relevant info is buried in the middle." Having the window ≠ using it effectively. Most production use cases don't need more than 200K.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>"Digital employee" framing is premature.</strong> These are sophisticated tools that require significant setup, monitoring, and error correction. Calling them "employees" sets expectations that lead to disappointment. Better framing: "AI power tools for skilled operators."</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>Compute scaling assumptions.</strong> "More GPUs = better model" has diminishing returns. The Chinchilla scaling laws suggest we're approaching the point where data quality matters more than compute quantity. 550K GPUs doesn't automatically mean 3x better model.</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== CONTRARIAN TAKES ==================== -->
+<div class="section" id="sec-contrarian">
+  <h2>Contrarian Takes</h2>
+  <p class="section-desc">Positions that go against the mainstream narrative. Each backed with reasoning.</p>
+
+  <div class="card">
+    <h3><span class="icon">1️⃣</span> The Model Layer is Already Commoditized</h3>
+    <p>Everyone is racing to build the "best model." But when GPT 5.2, Gemini 4, Grok 5, and Claude 4.6 all score within 10% of each other on benchmarks, the model IS the commodity. The value has already shifted to the application layer. Founders obsessing over "which model" are asking the wrong question. The right question: "What can I build on top of any model that creates unique value?"</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">2️⃣</span> Google's Moat Isn't AI — It's the Calendar Invite</h3>
+    <p>Every transcript focuses on Gemini's reasoning capabilities and benchmarks. But Google's real advantage is mundane: they own the workflow. Your email, your calendar, your documents, your cloud storage. When AI lives inside those tools, it doesn't matter if Claude is 5% smarter. People use what's convenient, not what's optimal. Google wins on distribution, not intelligence.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">3️⃣</span> Open Source Will Win the Long Game</h3>
+    <p>The transcripts position Mistral/Llama as the "accessible" alternative to premium models. But history shows: open source always wins in infrastructure. Linux beat Windows servers. PostgreSQL beat Oracle for most use cases. Open source AI models will close the gap because thousands of contributors iterate faster than any single company. The $2.5B training cost is a temporary moat — it's getting cheaper every quarter.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">4️⃣</span> Grok's X Data Advantage is Overrated</h3>
+    <p>Real-time X/Twitter data sounds powerful. But X's data quality has degraded significantly since 2022. Bot activity, engagement farming, and reduced mainstream user participation mean the "real-time social intelligence" is increasingly noisy. Grok having access to X data is like having a firehose connected to a muddy river — volume without clarity.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">5️⃣</span> The "AI Employee" Framing Will Cause a Backlash</h3>
+    <p>Calling AI tools "digital employees" is great marketing and terrible expectation-setting. Employees have judgment, accountability, and social awareness. AI agents have pattern matching and tool access. The gap will become painfully visible when companies try to deploy "AI employees" and discover they need as much management overhead as junior humans — just in different ways.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">6️⃣</span> The Real Killer App is Trust, Not Intelligence</h3>
+    <p>The transcript says it best: "The AI model that wins isn't just the smartest one — it's the one people actually trust." But nobody is building trust infrastructure. Truth Mode 2.0 is the first serious attempt. The founder who builds verified, auditable, provably-correct AI outputs will own the enterprise market. This is the uncapped opportunity hiding in plain sight.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">7️⃣</span> Agent Fatigue is Coming</h3>
+    <p>Right now, "agentic AI" is the hottest phrase in tech. Within 18 months, we'll hit "agent fatigue" — too many agents, too many MCP connections, too many autonomous processes to monitor. The next wave after "build agents" will be "manage the agents." The project-manager-for-AI-agents product category doesn't exist yet. It will.</p>
+  </div>
+</div>
+
+<!-- ==================== 90 DAY ACTIONS ==================== -->
+<div class="section" id="sec-actions">
+  <h2>90-Day Action Plan</h2>
+  <p class="section-desc">Specific tactical moves for the next 90 days based on this entire analysis.</p>
+
+  <div class="card">
+    <h3><span class="icon">🔥</span> Priority 1: Immediate (This Week)</h3>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>Save this report as a knowledge base reference.</strong> Pin it. Every product decision for the next quarter should reference the landscape intelligence here.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>Test Google Antigravity.</strong> Build one simple app. Evaluate the skills/workflow system firsthand. Compare it to your Claude Code + Expo workflow.</div></li>
+      <li><div class="bullet" style="background:var(--red)"></div><div><strong>Publish one piece of content from the Flywheel fuel.</strong> Pick the strongest hook ("Google says don't trust their own AI" or "The AI that wins won't be the smartest"). Ship it.</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">⚡</span> Priority 2: Next 30 Days</h3>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--gold)"></div><div><strong>Design the AI Landscape Navigator module (#10) for Founder Brain.</strong> Use the RCCF prompt template from this report. Build the prompt, add to modules.js, update HTML test.</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div><strong>Enhance AI Systems Builder with agentic workflow design.</strong> Add the Antigravity-inspired pattern (skills + workflows + context files + MCP) as a reference framework in the prompt.</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div><strong>Research MCP server development.</strong> Understand how to build a simple MCP server. This is the composability layer that makes "everything is a potential agent/skill/tool" real.</div></li>
+      <li><div class="bullet" style="background:var(--gold)"></div><div><strong>Run the AI Stack Audit on your own subscriptions.</strong> Use the DRIP Matrix. Which tools are Delegate, Replace, Invest, or Produce? Kill the capped ones.</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🚀</span> Priority 3: 30–60 Days</h3>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--blue)"></div><div><strong>Build VibeForge's first "skill pack."</strong> Package your app-building expertise as a set of skills/workflows that work inside Antigravity or Claude Code. Test it on a real client project.</div></li>
+      <li><div class="bullet" style="background:var(--blue)"></div><div><strong>Prototype multi-model routing for Founder Brain.</strong> Different modules → different APIs based on strength. Start with Claude for reasoning-heavy modules, test Grok for real-time data modules.</div></li>
+      <li><div class="bullet" style="background:var(--blue)"></div><div><strong>Ship a Content Flywheel series.</strong> 5 pieces over 2 weeks, all generated from this report's fuel section. Track what resonates.</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🎯</span> Priority 4: 60–90 Days</h3>
+    <ul class="insight-list">
+      <li><div class="bullet" style="background:var(--green)"></div><div><strong>Release Founder Brain v3 with new module + enhancements.</strong> The AI Navigator module, enhanced AI Systems Builder, and Truth Mode-inspired Founder Mirror.</div></li>
+      <li><div class="bullet" style="background:var(--green)"></div><div><strong>Evaluate MCP compatibility for Founder Brain modules.</strong> Can each module be exposed as an MCP tool that other agents can call? Design the interface.</div></li>
+      <li><div class="bullet" style="background:var(--green)"></div><div><strong>Explore ChurnWise agentic features.</strong> Can Cerebra autonomously trigger retention workflows using the new tool-use capabilities? Prototype one flow.</div></li>
+      <li><div class="bullet" style="background:var(--green)"></div><div><strong>Position Nemurium for the multimodal/3D wave.</strong> If Gemini 4's 3D spatial claims materialize, have a prototype concept ready for AI-assisted XR world-building.</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="icon">🧭</span> The North Star</h3>
+    <div class="callout green">
+      <strong>Build model-agnostic, composable, MCP-compatible tools that solve specific founder pain points. Let the model providers burn billions on infrastructure. You own the application layer, the domain expertise, and the trust relationship with your users. That's the uncapped play.</strong>
+    </div>
+  </div>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: document.querySelector('.nav').offsetTop, behavior: 'smooth' });
+}
+
+function toggleAccordion(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+// Auto-animate meter bars on section view
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.meter-fill').forEach(m => {
+        m.style.width = m.style.width;
+      });
+    }
+  });
+});
+document.querySelectorAll('.card').forEach(c => observer.observe(c));
+</script>
+</body>
+</html>

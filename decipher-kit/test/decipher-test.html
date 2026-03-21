@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DecipherKit Test Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #95CBDE;
+            --magenta: #A75FBB;
+            --violet: #413672;
+            --dark-bg: #020203;
+            --light-bg: #FFFFFF;
+            --text-dark: #1A1A1A;
+            --text-light: #F5F5F5;
+            --border: rgba(149, 203, 222, 0.2);
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --flag-color: #A75FBB;
+        }
+
+        body.dark-mode {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+        }
+
+        body.light-mode {
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 2px solid var(--cyan);
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            background: var(--violet);
+            border: none;
+            color: var(--text-light);
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: var(--magenta);
+            transform: translateY(-2px);
+        }
+
+        /* Main Container */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Panel Base Styles */
+        .panel {
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            background: var(--dark-bg);
+            transition: all 0.3s;
+        }
+
+        .light-mode .panel {
+            background: var(--light-bg);
+            border-color: rgba(65, 54, 114, 0.1);
+        }
+
+        .panel:hover {
+            border-color: var(--cyan);
+        }
+
+        .panel h2 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        /* API Key Section */
+        .api-key-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .api-input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .api-input-group input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-light);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+        }
+
+        .light-mode .api-input-group input {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--text-dark);
+        }
+
+        .api-input-group input:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(149, 203, 222, 0.1);
+        }
+
+        .toggle-visibility {
+            background: var(--violet);
+            border: none;
+            color: var(--cyan);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .toggle-visibility:hover {
+            background: var(--magenta);
+        }
+
+        .api-status {
+            font-size: 0.85rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .api-status.valid {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .api-status.invalid {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
+        /* Upload Section */
+        .upload-area {
+            border: 3px dashed var(--cyan);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(149, 203, 222, 0.05);
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover {
+            border-color: var(--magenta);
+            background: rgba(167, 95, 187, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--magenta);
+            background: rgba(167, 95, 187, 0.15);
+        }
+
+        .upload-area p {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .upload-area .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Thumbnails */
+        .thumbnails {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .thumbnail {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            border: 2px solid var(--cyan);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .thumbnail:hover {
+            border-color: var(--magenta);
+            transform: scale(1.05);
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .thumbnail-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .thumbnail:hover .thumbnail-remove {
+            opacity: 1;
+        }
+
+        /* Glyph Map Section */
+        .glyph-map-section {
+            grid-column: 1 / -1;
+        }
+
+        .tree-view {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+        }
+
+        .light-mode .tree-view {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .tree-node {
+            margin-left: 1rem;
+            padding: 0.25rem 0;
+        }
+
+        .tree-toggle {
+            background: none;
+            border: none;
+            color: var(--cyan);
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0;
+            margin-right: 0.3rem;
+        }
+
+        .tree-toggle:hover {
+            color: var(--magenta);
+        }
+
+        .tree-value {
+            color: var(--text-light);
+        }
+
+        .light-mode .tree-value {
+            color: var(--text-dark);
+        }
+
+        .tree-editable {
+            background: rgba(149, 203, 222, 0.1);
+            border: 1px solid var(--cyan);
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tree-editable:hover {
+            background: rgba(167, 95, 187, 0.1);
+            border-color: var(--magenta);
+        }
+
+        /* Transcribe Button */
+        .transcribe-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            border: none;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        .transcribe-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(149, 203, 222, 0.3);
+        }
+
+        .transcribe-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .transcribe-btn.loading {
+            opacity: 0.8;
+        }
+
+        /* Results Section */
+        .results-section {
+            grid-column: 1 / -1;
+        }
+
+        .surface-result {
+            margin-bottom: 1.5rem;
+            border: 2px solid var(--cyan);
+            border-radius: 8px;
+            padding: 1rem;
+            background: rgba(149, 203, 222, 0.05);
+        }
+
+        .light-mode .surface-result {
+            background: rgba(149, 203, 222, 0.02);
+        }
+
+        .surface-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--cyan);
+        }
+
+        .surface-title {
+            font-weight: 600;
+            color: var(--cyan);
+        }
+
+        .surface-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid var(--border);
+            margin-left: 0.5rem;
+        }
+
+        .surface-orientation {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+
+        .light-mode .surface-orientation {
+            color: var(--text-dark);
+        }
+
+        /* Confidence Badge */
+        .confidence-badge {
+            display: inline-block;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .confidence-badge.high {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .confidence-badge.medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .confidence-badge.low {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .confidence-badge.flag {
+            background: rgba(167, 95, 187, 0.2);
+            color: var(--flag-color);
+        }
+
+        /* Transcription Item */
+        .transcription-item {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            border-left: 4px solid var(--cyan);
+        }
+
+        .light-mode .transcription-item {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .item-text {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
+
+        .item-controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .control-btn.accept {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .control-btn.accept:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        .control-btn.edit {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .control-btn.edit:hover {
+            background: rgba(245, 158, 11, 0.3);
+        }
+
+        .control-btn.flag {
+            background: rgba(167, 95, 187, 0.2);
+            color: var(--flag-color);
+            border: 1px solid var(--flag-color);
+        }
+
+        .control-btn.flag:hover {
+            background: rgba(167, 95, 187, 0.3);
+        }
+
+        /* Edit Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--dark-bg);
+            border: 2px solid var(--cyan);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .light-mode .modal-content {
+            background: var(--light-bg);
+        }
+
+        .modal-content h3 {
+            color: var(--cyan);
+            margin-bottom: 1rem;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-light);
+            font-family: 'Monaco', 'Menlo', monospace;
+            margin-bottom: 1rem;
+        }
+
+        .light-mode .modal-content input {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--text-dark);
+        }
+
+        .modal-content input:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(149, 203, 222, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .modal-buttons .save {
+            background: var(--cyan);
+            color: var(--text-dark);
+        }
+
+        .modal-buttons .save:hover {
+            background: var(--magenta);
+        }
+
+        .modal-buttons .cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+
+        .modal-buttons .cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(149, 203, 222, 0.1);
+            border: 2px solid var(--cyan);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        /* Export Section */
+        .export-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--cyan);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            border-color: var(--cyan);
+            background: rgba(149, 203, 222, 0.1);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(149, 203, 222, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--cyan);
+            animation: spin 0.8s linear infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            opacity: 0.6;
+        }
+
+        .empty-state p {
+            margin: 0.5rem 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .panel {
+                padding: 1rem;
+            }
+
+            .transcribe-btn {
+                padding: 0.75rem;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <!-- Header -->
+    <div class="header">
+        <h1>🔍 DecipherKit</h1>
+        <div class="header-controls">
+            <button class="toggle-btn" id="themeToggle">☀️ Light Mode</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Column: Upload & API -->
+        <div>
+            <!-- Backend URL Panel -->
+            <div class="panel">
+                <h2>🔗 Backend Connection</h2>
+                <div class="api-key-section">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Backend URL</label>
+                    <div class="api-input-group">
+                        <input
+                            type="text"
+                            id="backendUrl"
+                            placeholder="http://localhost:3000"
+                            value="http://localhost:3000"
+                            autocomplete="off"
+                        >
+                        <button class="toggle-visibility" id="testConnection" title="Test connection">🔌</button>
+                    </div>
+                    <div class="api-status" id="apiStatus" style="display: none;"></div>
+                    <p style="font-size: 0.75rem; opacity: 0.6; margin-top: 0.5rem;">API key stays server-side in your backend .env — never exposed in the browser.</p>
+                </div>
+            </div>
+
+            <!-- Upload Panel -->
+            <div class="panel" style="margin-top: 1.5rem;">
+                <h2>📸 Handwriting Images</h2>
+                <div
+                    class="upload-area"
+                    id="uploadArea"
+                    ondrop="handleDrop(event)"
+                    ondragover="handleDragOver(event)"
+                    ondragleave="handleDragLeave(event)"
+                >
+                    <div class="icon">📤</div>
+                    <p style="font-weight: 600;">Drag images here or click to select</p>
+                    <p style="font-size: 0.85rem; opacity: 0.7;">Supports JPG, PNG, WebP</p>
+                    <input
+                        type="file"
+                        id="fileInput"
+                        class="file-input"
+                        accept="image/*"
+                        multiple
+                    >
+                </div>
+                <div class="thumbnails" id="thumbnails"></div>
+            </div>
+        </div>
+
+        <!-- Right Column: Glyph Map -->
+        <div>
+            <!-- Glyph Map Panel -->
+            <div class="panel">
+                <h2>📋 Glyph Map v0.3 <small style="opacity:0.6">(loaded server-side)</small></h2>
+                <p style="padding:0.5rem 1rem;opacity:0.7;font-size:0.85rem;">The v0.3 glyph map is now loaded by the backend from <code>glyph-map-jaytee-v0.3.json</code>. This panel shows a read-only preview. Client corrections are sent via <code>POST /api/decipher/correct</code>.</p>
+                <div class="tree-view" id="glyphMapTree"></div>
+            </div>
+
+            <!-- Transcribe Button -->
+            <button class="transcribe-btn" id="transcribeBtn" disabled>
+                Transcribe with Claude
+            </button>
+        </div>
+
+        <!-- Full Width: Glyph Map (visible as tree) -->
+        <div class="glyph-map-section" style="display: none;">
+            <div class="panel">
+                <h2>📚 Glyph Map (JSON)</h2>
+                <div class="tree-view" id="fullGlyphMap"></div>
+            </div>
+        </div>
+
+        <!-- Full Width: Results -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="panel">
+                <h2>✅ Transcription Results</h2>
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3>Edit Transcription</h3>
+            <input
+                type="text"
+                id="editInput"
+                placeholder="Enter corrected text"
+                autocomplete="off"
+            >
+            <div class="modal-buttons">
+                <button class="save" onclick="saveEdit()">Save</button>
+                <button class="cancel" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============= STATE & CONFIG =============
+        const DEFAULT_GLYPH_MAP = {
+            "meta": {
+                "version": "0.2",
+                "writer": "JayTee",
+                "created": "2026-03-19",
+                "source": "4 photographs (sticky notes + spiral notepad)",
+                "status": "validated_baseline",
+                "correction_count": 0
+            },
+            "reliable_forms": {
+                "capitals": ["C", "F", "V", "S", "T", "A", "M", "O", "P", "N", "H"],
+                "always_clean_words": [
+                    "Claude", "Forge", "Vibe", "OpenClaw", "Command",
+                    "Center", "Code", "Cowork", "Build", "Local", "Connect", "Move"
+                ]
+            },
+            "problem_zones": [
+                {
+                    "id": "pz-001",
+                    "letter": "a",
+                    "case": "lowercase",
+                    "confusion_targets": ["u", "o"],
+                    "example": "Tracks misread as Tracker",
+                    "rule": "When lowercase 'a' is ambiguous, prefer 'a' if word context matches a known vocabulary item"
+                },
+                {
+                    "id": "pz-002",
+                    "letter": "p",
+                    "case": "lowercase",
+                    "confusion_targets": ["es", "de"],
+                    "context": "fast writing",
+                    "example": "Rep Plan misread as Redesign or Design",
+                    "rule": "When 'p' appears ambiguous in fast writing, check if preceding letters form a known word stem with 'p'"
+                },
+                {
+                    "id": "pz-003",
+                    "type": "trailing_compression",
+                    "description": "End-of-word letters trail off or compress",
+                    "rule": "Weight first 2-3 letters most heavily and infer endings from context. Do NOT guess full word from trailing strokes alone."
+                },
+                {
+                    "id": "pz-004",
+                    "type": "rotation",
+                    "description": "Words written at angles (sideways, upside-down on stickies)",
+                    "rule": "Detect rotation before transcription. If text appears at non-standard angle, mentally rotate before reading."
+                },
+                {
+                    "id": "pz-005",
+                    "type": "color_identification",
+                    "description": "Pink, green, and yellow stickies confused across AI systems",
+                    "rule": "Color = category signal. Report color accurately. When uncertain, flag confidence. Never default to 'yellow'."
+                }
+            ],
+            "structural_notation": {
+                "asterisk": { "symbol": "*", "meaning": "priority or action item", "preserve": true },
+                "arrow_left": { "symbol": "←", "meaning": "relational pointer — spatial connection, not just textual", "preserve": true },
+                "arrow_right": { "symbol": "→", "meaning": "relational pointer — spatial connection, not just textual", "preserve": true },
+                "double_dash": { "symbol": "– –", "meaning": "section or phase separator within a document", "preserve": true },
+                "parentheses": { "symbol": "()", "meaning": "qualifier or methodology label", "preserve": true },
+                "underline": { "meaning": "task separator — divides distinct action items on same surface", "preserve": true },
+                "sticky_color": { "meaning": "category signal — must be tracked and reported accurately", "preserve": true },
+                "physical_layout": { "meaning": "relational grouping — arrows + proximity = connected concepts", "preserve": true },
+                "paperclip": { "meaning": "physical attachment — two notes are a unit", "preserve": true }
+            },
+            "failure_modes": {
+                "context_bias": {
+                    "severity": "critical",
+                    "description": "AI reads what it expects, not what's written",
+                    "example": "Procurement OS misread as Estimate OS due to prior context",
+                    "mitigation": "Read letterforms FIRST, apply context as SECONDARY signal"
+                },
+                "no_cross_reference": {
+                    "severity": "high",
+                    "description": "Same note partially visible across images treated independently",
+                    "mitigation": "MUST synthesize across multiple input images"
+                },
+                "hallucination": {
+                    "severity": "critical",
+                    "description": "Unclear letterforms produce fabricated plausible phrases",
+                    "examples": ["Forge Embed Code", "Scrambled with", "Voice control"],
+                    "mitigation": "Confidence threshold required. Flag uncertain reads explicitly. Never fabricate."
+                },
+                "color_misidentification": {
+                    "severity": "medium",
+                    "description": "Pink and green stickies called yellow",
+                    "mitigation": "Identify color independently before transcription. Use lighting/shadow analysis."
+                },
+                "structural_ignored": {
+                    "severity": "high",
+                    "description": "Double-dash separators, arrows, parenthetical qualifiers skipped or treated as decoration",
+                    "mitigation": "All structural notation carries semantic meaning. Always preserve and report."
+                }
+            },
+            "known_vocabulary": [
+                "OpenClaw", "VibeForge Studios", "Forge Command Center", "Claude Code",
+                "Claude Cowork", "Procurement OS", "Estimate OS", "Transplant Tracker",
+                "DecipherKit", "VCE", "ChurnWise", "CerebraSpark",
+                "Rep Plan", "Tracks", "Token Usage", "Mobile Control",
+                "Siri", "iPad", "Executive Branches", "agents", "F500",
+                "Mapping", "Structure", "Audit", "Phase"
+            ],
+            "corrections": []
+        };
+
+        // System prompt is now handled server-side by the backend.
+        // No API keys or prompt templates are exposed in the browser.
+
+        let state = {
+            isDarkMode: true,
+            backendUrl: 'http://localhost:3000',
+            backendConnected: false,
+            images: [],
+            glyphMap: JSON.parse(JSON.stringify(DEFAULT_GLYPH_MAP)),
+            results: null,
+            corrections: [],
+            currentEditItemId: null
+        };
+
+        // ============= INITIALIZATION =============
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeEventListeners();
+            renderGlyphMapTree();
+            loadBackendUrl();
+            testBackendConnection();
+        });
+
+        // ============= EVENT LISTENERS =============
+        function initializeEventListeners() {
+            // Theme toggle
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+            // Backend URL
+            document.getElementById('backendUrl').addEventListener('input', (e) => {
+                state.backendUrl = e.target.value.replace(/\/+$/, '');
+                saveBackendUrl();
+                updateTranscribeButton();
+            });
+            document.getElementById('testConnection').addEventListener('click', testBackendConnection);
+
+            // Upload
+            document.getElementById('uploadArea').addEventListener('click', () => {
+                document.getElementById('fileInput').click();
+            });
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+            // Transcribe
+            document.getElementById('transcribeBtn').addEventListener('click', transcribeWithClaude);
+
+            // Modal
+            document.getElementById('editModal').addEventListener('click', (e) => {
+                if (e.target.id === 'editModal') closeEditModal();
+            });
+            document.getElementById('editInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') closeEditModal();
+            });
+        }
+
+        // ============= THEME MANAGEMENT =============
+        function toggleTheme() {
+            state.isDarkMode = !state.isDarkMode;
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+            const btn = document.getElementById('themeToggle');
+            btn.textContent = state.isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+
+        // ============= BACKEND CONNECTION =============
+        function saveBackendUrl() {
+            sessionStorage.setItem('decipher_backend_url', state.backendUrl);
+        }
+
+        function loadBackendUrl() {
+            const saved = sessionStorage.getItem('decipher_backend_url');
+            if (saved) {
+                state.backendUrl = saved;
+                document.getElementById('backendUrl').value = saved;
+            }
+        }
+
+        async function testBackendConnection() {
+            const status = document.getElementById('apiStatus');
+            status.style.display = 'block';
+            status.className = 'api-status';
+            status.textContent = '⏳ Testing connection...';
+
+            try {
+                const res = await fetch(`${state.backendUrl}/api/decipher/health`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                const data = json.data || json;
+
+                if (data.anthropicConfigured) {
+                    status.className = 'api-status valid';
+                    status.textContent = '✓ Connected — API key configured on server';
+                    state.backendConnected = true;
+                } else {
+                    // Proxy is running but no key yet — prompt user
+                    status.className = 'api-status invalid';
+                    status.textContent = '⚠ Connected but API key not set. Click 🔑 to configure.';
+                    state.backendConnected = false;
+                    showKeyPromptButton();
+                }
+            } catch (err) {
+                status.className = 'api-status invalid';
+                status.textContent = `✗ Cannot reach backend at ${state.backendUrl}`;
+                state.backendConnected = false;
+            }
+
+            updateTranscribeButton();
+        }
+
+        function showKeyPromptButton() {
+            const existing = document.getElementById('keyPromptBtn');
+            if (existing) return;
+            const container = document.getElementById('apiStatus').parentElement;
+            const btn = document.createElement('button');
+            btn.id = 'keyPromptBtn';
+            btn.textContent = '🔑 Set API Key (in-memory only)';
+            btn.style.cssText = 'margin-top:0.5rem;width:100%;padding:0.6rem;background:var(--violet);border:none;color:var(--text-light);border-radius:6px;cursor:pointer;font-weight:600;transition:all 0.3s;';
+            btn.addEventListener('click', promptAndSendKey);
+            container.appendChild(btn);
+        }
+
+        async function promptAndSendKey() {
+            const key = prompt('Enter your Anthropic API key.\nIt will be held in server memory ONLY — never saved to disk or browser storage.');
+            if (!key) return;
+
+            try {
+                const res = await fetch(`${state.backendUrl}/api/decipher/set-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error?.message || 'Failed to set key');
+                }
+
+                // Remove the button, re-test connection
+                const btn = document.getElementById('keyPromptBtn');
+                if (btn) btn.remove();
+                await testBackendConnection();
+            } catch (err) {
+                alert(`Failed to configure key: ${err.message}`);
+            }
+        }
+
+        function updateTranscribeButton() {
+            const btn = document.getElementById('transcribeBtn');
+            btn.disabled = !state.backendConnected || state.images.length === 0;
+        }
+
+        // ============= FILE UPLOAD =============
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            addImagesToState(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addImagesToState(files);
+        }
+
+        function addImagesToState(files) {
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.images.push({
+                        name: file.name,
+                        type: file.type,
+                        base64: e.target.result.split(',')[1],
+                        dataUrl: e.target.result
+                    });
+                    renderThumbnails();
+                    updateTranscribeButton();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderThumbnails() {
+            const container = document.getElementById('thumbnails');
+            container.innerHTML = state.images.map((img, idx) => `
+                <div class="thumbnail">
+                    <img src="${img.dataUrl}" alt="${img.name}">
+                    <button class="thumbnail-remove" onclick="removeImage(${idx})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removeImage(idx) {
+            state.images.splice(idx, 1);
+            renderThumbnails();
+            updateTranscribeButton();
+        }
+
+        // ============= GLYPH MAP TREE =============
+        function renderGlyphMapTree() {
+            const tree = document.getElementById('glyphMapTree');
+            tree.innerHTML = renderTreeNode('glyph_map', state.glyphMap);
+        }
+
+        function renderTreeNode(key, value, depth = 0) {
+            if (value === null || value === undefined) {
+                return `<div class="tree-node"><span class="tree-toggle" style="visibility:hidden;">▶</span><strong>${escapeHtml(String(key))}:</strong> <span class="tree-value">null</span></div>`;
+            }
+
+            if (typeof value !== 'object') {
+                const displayValue = typeof value === 'string' ? `"${escapeHtml(value)}"` : String(value);
+                const isEditable = ['version', 'writer', 'status'].includes(key);
+                const className = isEditable ? 'tree-value tree-editable' : 'tree-value';
+                return `<div class="tree-node"><span class="tree-toggle" style="visibility:hidden;">▶</span><strong>${escapeHtml(String(key))}:</strong> <span class="${className}" ${isEditable ? `onclick="editGlyphValue('${key}', '${escapeHtml(String(value))}')"` : ''}>${displayValue}</span></div>`;
+            }
+
+            if (Array.isArray(value)) {
+                if (value.length === 0) {
+                    return `<div class="tree-node"><strong>${escapeHtml(String(key))}:</strong> <span class="tree-value">[]</span></div>`;
+                }
+                const id = `tree-${Math.random()}`;
+                let html = `<div class="tree-node">
+                    <button class="tree-toggle" onclick="toggleTreeNode(this, '${id}')">▼</button>
+                    <strong>${escapeHtml(String(key))}:</strong> <span class="tree-value">[${value.length}]</span>
+                    <div id="${id}" class="tree-node">`;
+                value.forEach((item, idx) => {
+                    html += renderTreeNode(`[${idx}]`, item, depth + 1);
+                });
+                html += '</div></div>';
+                return html;
+            }
+
+            const id = `tree-${Math.random()}`;
+            const keys = Object.keys(value);
+            let html = `<div class="tree-node">
+                <button class="tree-toggle" onclick="toggleTreeNode(this, '${id}')">▼</button>
+                <strong>${escapeHtml(String(key))}:</strong> <span class="tree-value">{${keys.length}}</span>
+                <div id="${id}" class="tree-node">`;
+            keys.forEach(k => {
+                html += renderTreeNode(k, value[k], depth + 1);
+            });
+            html += '</div></div>';
+            return html;
+        }
+
+        function toggleTreeNode(btn, id) {
+            const node = document.getElementById(id);
+            const isOpen = node.style.display !== 'none';
+            node.style.display = isOpen ? 'none' : 'block';
+            btn.textContent = isOpen ? '▶' : '▼';
+        }
+
+        function editGlyphValue(key, currentValue) {
+            const newValue = prompt(`Edit "${key}":`, currentValue);
+            if (newValue !== null && newValue !== currentValue) {
+                state.glyphMap.meta[key] = newValue;
+                renderGlyphMapTree();
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // ============= TRANSCRIPTION =============
+        async function transcribeWithClaude() {
+            if (!state.backendConnected || state.images.length === 0) {
+                alert('Please connect to backend and add images');
+                return;
+            }
+
+            const btn = document.getElementById('transcribeBtn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            btn.innerHTML = 'Transcribing <span class="spinner"></span>';
+
+            try {
+                // Send images to backend proxy — glyph map v0.3 is loaded SERVER-SIDE
+                // Backend handles Claude API key securely from .env
+                // Client only sends raw base64 images + optional config
+                const response = await fetch(`${state.backendUrl}/api/decipher/transcribe`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        images: state.images.map(img => {
+                            // Strip data URI prefix — backend expects raw base64
+                            const b64 = img.base64;
+                            if (b64.startsWith('data:')) {
+                                return b64.split(',')[1] || b64;
+                            }
+                            return b64;
+                        }),
+                        config: {
+                            enableCrossImageSynthesis: state.images.length > 1,
+                            highConfidenceThreshold: 0.9,
+                        },
+                    })
+                });
+
+                if (!response.ok) {
+                    const errJson = await response.json().catch(() => ({}));
+                    throw new Error(errJson.error?.message || `Backend error: ${response.status}`);
+                }
+
+                const json = await response.json();
+                const results = json.data;
+
+                if (!results || !results.surfaces) {
+                    throw new Error('Invalid response from backend');
+                }
+
+                state.results = results;
+                state.corrections = [];
+                renderResults();
+            } catch (error) {
+                alert(`Transcription failed: ${error.message}`);
+                console.error(error);
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                btn.innerHTML = 'Transcribe with Claude';
+            }
+        }
+
+        // ============= RESULTS RENDERING =============
+        function renderResults() {
+            const section = document.getElementById('resultsSection');
+            const content = document.getElementById('resultsContent');
+            section.style.display = 'block';
+
+            let html = '<div class="stats-grid">';
+            html += `<div class="stat-card"><div class="stat-value">${state.results.images_analyzed}</div><div class="stat-label">Images Analyzed</div></div>`;
+            html += `<div class="stat-card"><div class="stat-value">${state.results.surfaces.length}</div><div class="stat-label">Surfaces</div></div>`;
+            html += `<div class="stat-card"><div class="stat-value">${state.results.flagged_items.length}</div><div class="stat-label">Flagged Items</div></div>`;
+            html += `<div class="stat-card"><div class="stat-value">${state.corrections.length}</div><div class="stat-label">Corrections</div></div>`;
+            html += '</div>';
+
+            state.results.surfaces.forEach((surface, surfaceIdx) => {
+                html += `
+                    <div class="surface-result">
+                        <div class="surface-header">
+                            <div>
+                                <span class="surface-title">${surface.type}</span>
+                                <span class="surface-color" style="background-color: ${getColorHex(surface.color)};"></span>
+                                <span class="surface-orientation">${surface.orientation}</span>
+                            </div>
+                        </div>
+                `;
+
+                const itemId = `item-${surfaceIdx}`;
+                const confidence = surface.transcription.confidence || 'MEDIUM';
+                html += `
+                    <div class="transcription-item">
+                        <div class="item-text">
+                            ${escapeHtml(surface.transcription.text)}
+                            <span class="confidence-badge ${confidence.toLowerCase()}">
+                                ${confidence} ${surface.transcription.confidence_score ? `(${(surface.transcription.confidence_score * 100).toFixed(0)}%)` : ''}
+                            </span>
+                        </div>
+                        <div class="item-controls">
+                            <button class="control-btn accept" onclick="acceptItem('${itemId}')">✓ Accept</button>
+                            <button class="control-btn edit" onclick="openEditModal('${itemId}', '${escapeHtml(surface.transcription.text)}')">✎ Edit</button>
+                            <button class="control-btn flag" onclick="flagItem('${itemId}')">🚩 Flag</button>
+                        </div>
+                    </div>
+                `;
+
+                if (surface.structural_notation.length > 0) {
+                    html += `<div style="margin-top: 0.75rem; padding: 0.5rem; background: rgba(149, 203, 222, 0.1); border-radius: 4px;">
+                        <strong>Notation:</strong> ${escapeHtml(surface.structural_notation.join(', '))}
+                    </div>`;
+                }
+
+                html += '</div>';
+            });
+
+            html += '<div class="export-buttons">';
+            html += '<button class="export-btn" onclick="exportResults()">📥 Export Results (JSON)</button>';
+            html += '<button class="export-btn" onclick="exportGlyphMap()">📥 Export Updated Glyph Map</button>';
+            html += '<button class="export-btn" onclick="submitCorrectionsToBackend()" style="background:linear-gradient(135deg, var(--cyan), var(--magenta));">🔄 Submit Corrections to Backend</button>';
+            html += '</div>';
+
+            content.innerHTML = html;
+        }
+
+        function getColorHex(colorName) {
+            const colors = {
+                'green': '#22c55e',
+                'yellow': '#eab308',
+                'pink': '#ec4899',
+                'blue': '#3b82f6',
+                'white': '#f5f5f5',
+                'orange': '#f97316'
+            };
+            return colors[colorName] || '#95CBDE';
+        }
+
+        // ============= CORRECTION INTERFACE =============
+        function acceptItem(itemId) {
+            const idx = parseInt(itemId.split('-')[1]);
+            state.corrections.push({
+                index: idx,
+                action: 'accept',
+                original: state.results.surfaces[idx].transcription.text,
+                corrected: state.results.surfaces[idx].transcription.text
+            });
+            alert('✓ Accepted');
+        }
+
+        function openEditModal(itemId, currentText) {
+            state.currentEditItemId = itemId;
+            const input = document.getElementById('editInput');
+            input.value = currentText;
+            document.getElementById('editModal').classList.add('open');
+            input.focus();
+            input.select();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('open');
+            state.currentEditItemId = null;
+        }
+
+        function saveEdit() {
+            if (!state.currentEditItemId) return;
+            const newText = document.getElementById('editInput').value.trim();
+            if (!newText) return;
+
+            const idx = parseInt(state.currentEditItemId.split('-')[1]);
+            state.corrections.push({
+                index: idx,
+                action: 'edit',
+                original: state.results.surfaces[idx].transcription.text,
+                corrected: newText
+            });
+
+            state.results.surfaces[idx].transcription.text = newText;
+            closeEditModal();
+            renderResults();
+            alert('✓ Updated');
+        }
+
+        function flagItem(itemId) {
+            const idx = parseInt(itemId.split('-')[1]);
+            state.corrections.push({
+                index: idx,
+                action: 'flag',
+                original: state.results.surfaces[idx].transcription.text
+            });
+            alert('🚩 Flagged for review');
+        }
+
+        // ============= EXPORT =============
+        function exportResults() {
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                images_analyzed: state.results.images_analyzed,
+                surfaces: state.results.surfaces,
+                corrections: state.corrections
+            };
+            downloadJSON(exportData, 'decipher-results.json');
+        }
+
+        function exportGlyphMap() {
+            const updatedMap = JSON.parse(JSON.stringify(state.glyphMap));
+            updatedMap.corrections = state.corrections;
+            updatedMap.meta.correction_count = state.corrections.length;
+            downloadJSON(updatedMap, 'glyph-map-updated.json');
+        }
+
+        /**
+         * Submit corrections to backend via POST /api/decipher/correct
+         * This updates the server-side glyph map for future transcriptions
+         */
+        async function submitCorrectionsToBackend() {
+            if (state.corrections.length === 0) {
+                alert('No corrections to submit');
+                return;
+            }
+
+            try {
+                const payload = {
+                    corrections: state.corrections.map(c => ({
+                        original: c.original,
+                        corrected: c.corrected,
+                        rule: c.rule || undefined,
+                        context: c.context || undefined,
+                    })),
+                };
+
+                const res = await fetch(`${state.backendUrl}/api/decipher/correct`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) {
+                    const errJson = await res.json().catch(() => ({}));
+                    throw new Error(errJson.error?.message || `HTTP ${res.status}`);
+                }
+
+                const json = await res.json();
+                const data = json.data || json;
+                alert(`Submitted ${data.applied} correction(s) to backend`);
+            } catch (error) {
+                alert(`Failed to submit corrections: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function downloadJSON(data, filename) {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

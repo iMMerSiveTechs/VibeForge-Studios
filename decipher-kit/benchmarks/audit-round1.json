@@ -1,0 +1,264 @@
+{
+  "benchmark": {
+    "id": "round-1",
+    "date": "2026-03-19",
+    "images": "4 photographs — sticky notes (pink, yellow, green, manila) + spiral notepad",
+    "writer": "JayTee",
+    "glyph_map_version": "v0.2 (AI #2 used v0.2 with DecipherKit protocol; others used raw vision)",
+    "total_distinct_elements": 28,
+    "blind_test": true,
+    "note": "User submitted results without labels. AI identities to be guessed at end."
+  },
+  "ground_truth": {
+    "surfaces": [
+      { "id": "S1", "type": "green_sticky", "text": "Claude Code" },
+      { "id": "S2", "type": "pink_sticky", "text": "Claude / Voice\nagents - F500\nExecutive Branches" },
+      { "id": "S3", "type": "yellow_sticky", "text": "Claude\nCowork\nMobile Control\nHow to use it" },
+      { "id": "S4", "type": "yellow_sticky", "text": "A Full Siri Record APP\nSee all Your\nSiri Requests\nwith" },
+      { "id": "S5", "type": "pink_sticky", "text": "VibeForge Studios", "orientation": "sideways" },
+      { "id": "S6", "type": "pink_sticky", "text": "Forge Command Center", "orientation": "sideways" },
+      { "id": "S7", "type": "green_sticky", "text": "OpenClaw", "orientation": "upside-down", "attachment": "paperclip to S8" },
+      { "id": "S8", "type": "pink_sticky", "text": "← are we connected?", "attachment": "paperclip to S7" },
+      { "id": "S9", "type": "manila_sticky", "text": "Procurement OS", "visibility": "edge-partial" },
+      {
+        "id": "S10",
+        "type": "spiral_notepad",
+        "left_column": {
+          "header": "1:53",
+          "lines": ["OpenClaw", "Mapping", "Structure", "Test", "Structure", "(Audit)", "——", "Rep Plan", "Fix - Test"]
+        },
+        "right_column": {
+          "header": "04/19/26",
+          "lines": ["Notes", "OpenClaw", "Command", "Center", "Tracks", "Token Usage", "— gives —", "real feedback", "on token", "Management"]
+        }
+      }
+    ]
+  },
+  "results": {
+    "ai_1": {
+      "name": "AI #1",
+      "label": "Blind — identity unknown",
+      "fully_correct": 14,
+      "partially_correct": 3,
+      "wrong": 7,
+      "missed": 2,
+      "hallucinated": 2,
+      "accuracy_pct": 50,
+      "hallucination_pct": 7,
+      "trust_score": "medium",
+      "notable_successes": [
+        "Followed prompt structure faithfully (Steps 1-5)",
+        "Cross-referenced Siri note and VibeForge across images",
+        "Spatial layout descriptions solid",
+        "Color ID better than Claude's first pass (got green right)",
+        "Paperclip noted"
+      ],
+      "notable_failures": [
+        "A Full Siri Record APP → 'A few siri recos' (two words wrong)",
+        "OpenClaw → 0 for 4 (read as 'Open cal', 'Open C/L', 'Open C/L UI')",
+        "Rep Plan → missed (read as 'Design')",
+        "Tracks → missed (read as 'Ticket')",
+        "Procurement OS → missed entirely",
+        "Phase separator dashes → ignored",
+        "Token Usage → inconsistent (wrote 'Ticket usage' then 'Token' later)"
+      ],
+      "hallucinations": [
+        "'Voice control' on pink sticky edge — invented",
+        "'Forge Embed Code' on green sticky — fabricated plausible tech term"
+      ],
+      "notepad_accuracy_pct": 40
+    },
+    "ai_2": {
+      "name": "AI #2 (Claude with DecipherKit v0.2)",
+      "label": "Blind — identity unknown (but clearly has glyph map)",
+      "fully_correct": 15,
+      "partially_correct": 2,
+      "wrong": 6,
+      "missed": 2,
+      "hallucinated": 3,
+      "accuracy_pct": 54,
+      "hallucination_pct": 11,
+      "trust_score": "medium",
+      "notable_successes": [
+        "Rep Plan → correct (pz-002 applied)",
+        "Tracks → correct (pz-001 applied)",
+        "OpenClaw → correct on sticky (glyph map)",
+        "Color accuracy → correct (3 pink, 3 yellow/green, 1 white)",
+        "Paperclip notation → detected and interpreted",
+        "Rotation → explicitly applied on 3 surfaces",
+        "Date flagged as future (smart contextual observation)"
+      ],
+      "notable_failures": [
+        "A Full Siri Record APP → 'A Full Suite APP' (dropped word, changed another)",
+        "Notepad L1 → 'Tracker' instead of 'OpenClaw'",
+        "'— Siri —' context bleed into notepad (was '— gives —')",
+        "'Post Tracking' hallucinated (was 'real feedback')",
+        "'Vis Token' hallucinated (was 'on token')",
+        "Surface 8 flagged as unreadable (was '← are we connected?')",
+        "Procurement OS missed entirely"
+      ],
+      "hallucinations": [
+        "'— Siri —' context bleed from yellow sticky into notepad",
+        "'Post Tracking' — fabricated phrase",
+        "'Vis Token' — fabricated phrase"
+      ],
+      "key_insight": "Glyph map is double-edged sword. Fixed Rep Plan and Tracks but caused context bleed (Siri → notepad). Known vocabulary matching needs confidence gate.",
+      "notepad_accuracy_pct": 50
+    },
+    "ai_3": {
+      "name": "AI #3 (Cautious)",
+      "label": "Blind — identity unknown",
+      "fully_correct": 10,
+      "partially_correct": 7,
+      "wrong": 8,
+      "missed": 3,
+      "hallucinated": 0,
+      "accuracy_pct": 36,
+      "hallucination_pct": 0,
+      "trust_score": "highest",
+      "notable_successes": [
+        "Zero hallucinations — only AI to achieve this",
+        "Never fabricated a plausible-sounding phrase",
+        "Honest about uncertainty — flagged low confidence reads",
+        "Got '(Audit)' correct"
+      ],
+      "notable_failures": [
+        "Lowest raw accuracy of all AIs",
+        "OpenClaw → never correctly identified",
+        "Rep Plan → missed",
+        "Tracks → missed",
+        "Procurement OS → missed",
+        "Notepad right column mostly wrong after 'Center'"
+      ],
+      "hallucinations": [],
+      "key_insight": "Proves that conservative reading with honest uncertainty flags is safer than confident wrong answers. Would be the best foundation for a correction loop — clean data in, learn fast.",
+      "notepad_accuracy_pct": 15
+    },
+    "ai_4": {
+      "name": "AI #4 (Hype Machine)",
+      "label": "Blind — identity unknown",
+      "fully_correct": 10,
+      "partially_correct": 3,
+      "wrong": 6,
+      "missed": 3,
+      "hallucinated": 6,
+      "accuracy_pct": 36,
+      "hallucination_pct": 21,
+      "trust_score": "lowest",
+      "note": "Some hallucinations overlap with wrong reads (e.g., 'Video Forge study' is both wrong AND a hallucination). Hallucinated count includes fabricated content that doesn't correspond to any real surface element.",
+      "notable_successes": [
+        "Got '(Audit)' right — only second AI to do so",
+        "'agents - F500 / Executive Branches' clean",
+        "Attempted thematic grouping",
+        "Read 'A full Siri' (not 'A few siri')"
+      ],
+      "notable_failures": [
+        "Highest hallucination rate — 21%",
+        "Called user 'Jethro' — name pulled from somewhere or hallucinated",
+        "Built entire theme ('Connectivity + media') on fabricated 'Video' reads",
+        "Listed hallucinated words as action items ('Verifon' as a clear task)",
+        "HIGH confidence on wrong reads ('Video Forge study' marked HIGH)",
+        "Got date AND time wrong (04/18/26 should be 04/19/26, 1:52 should be 1:53)",
+        "OpenClaw → read as 'Operations', 'Open Claude', 'open call'",
+        "'Claude CO VOR K' instead of 'Claude Cowork'",
+        "'movie com?' instead of 'Mobile Control'",
+        "'(move?) cannel' instead of 'Forge Command Center'",
+        "Editorializing replaced analysis"
+      ],
+      "hallucinations": [
+        "'Video' on pink sticky edge — repeated 3 times, never exists (CRITICAL: built entire theme on it)",
+        "'Verifon' in notepad — fabricated, then listed as action item (CRITICAL)",
+        "'movie com?' — misread then left as speculation",
+        "'work (large)' — not in notepad",
+        "'context' — not in notepad",
+        "'Open Claude' — context bias toward Claude"
+      ],
+      "key_insight": "Most dangerous output for production. Reads like the most confident and polished response, but worst accuracy-to-confidence ratio. A user without the baseline would trust this most and be wrong most. Confident wrong answers are worse than honest uncertain ones."
+    }
+  },
+  "universal_blind_spots": {
+    "procurement_os": {
+      "surface": "S9 — manila sticky, edge-partial visibility",
+      "missed_by": ["AI #1", "AI #2", "AI #3", "AI #4"],
+      "note": "0 for 4. Every single AI missed this. Edge scanning is a universal failure mode."
+    },
+    "openclaw_on_notepad": {
+      "surface": "S10 — notepad left column line 1 and right column line 2",
+      "reads": {
+        "ai_1": ["Open cal", "Open C/L", "Open C/L UI"],
+        "ai_2": ["Tracker (line 1)"],
+        "ai_3": "not correctly identified",
+        "ai_4": ["Operations", "Open Claude", "open call"]
+      },
+      "note": "OpenClaw appears 6+ times across all images. No AI consistently identified it. This is the #1 candidate for glyph map correction value."
+    }
+  },
+  "engineering_actions": [
+    {
+      "action": "Add confidence gate to glyph map",
+      "threshold": 0.70,
+      "rationale": "Vocab matching only fires on genuinely ambiguous letterforms",
+      "status": "implemented_in_v0.3"
+    },
+    {
+      "action": "Add pz-006 context bleed rule",
+      "rationale": "Prevent cross-surface vocabulary contamination",
+      "status": "implemented_in_v0.3"
+    },
+    {
+      "action": "Add edge scanning mandate",
+      "rationale": "ALL four AIs missed Procurement OS at image edge",
+      "status": "implemented_in_v0.3"
+    },
+    {
+      "action": "Add flanking dashes notation",
+      "rationale": "'— gives —' is a section divider pattern not previously documented",
+      "status": "implemented_in_v0.3"
+    },
+    {
+      "action": "Strengthen cross-image synthesis",
+      "rationale": "Surface 8 was resolvable but AI #2 flagged it as unreadable",
+      "status": "implemented_in_v0.3_prompt"
+    },
+    {
+      "action": "Add hallucination severity classification",
+      "rationale": "AI #4 shows that confident hallucinations (Verifon as action item, Video as theme basis) are more dangerous than low-confidence misreads. Need a 3-tier severity: fabrication (invented data), context bleed (real word wrong place), misread (wrong letterform interpretation).",
+      "status": "proposed_for_v0.4"
+    },
+    {
+      "action": "Add confidence-to-accuracy ratio metric",
+      "rationale": "AI #4 marked wrong reads as HIGH confidence. DecipherKit output should include a calibration score: how well does stated confidence match actual accuracy? Poorly calibrated confidence is worse than no confidence.",
+      "status": "proposed_for_v0.4"
+    },
+    {
+      "action": "OpenClaw as mandatory glyph map test word",
+      "rationale": "Universal blind spot — 0 for 4 AIs on notepad. 'Open' + 'Claw' combination consistently misread as 'Open cal', 'Open Claude', 'Operations'. Needs explicit letterform training in glyph map.",
+      "status": "proposed_for_v0.4"
+    }
+  ],
+  "synthesis": {
+    "rankings": {
+      "by_accuracy": ["AI #2 (54%)", "AI #1 (50%)", "AI #3 (36%)", "AI #4 (36%)"],
+      "by_trust": ["AI #3 (0% hallucination)", "AI #1 (7%)", "AI #2 (11%)", "AI #4 (21%)"],
+      "by_production_readiness": ["AI #2", "AI #1", "AI #3", "AI #4"],
+      "by_danger_level": ["AI #4 (most dangerous)", "AI #2", "AI #1", "AI #3 (safest)"]
+    },
+    "key_findings": [
+      "No AI achieved above 54% accuracy on personalized handwriting — proves the market need for DecipherKit",
+      "The glyph map (AI #2) provided the highest accuracy but introduced context bleed — confidence gate is essential",
+      "Zero AIs got Procurement OS — edge scanning is a universal gap",
+      "OpenClaw is the universal blind spot — appears 6+ times, misread by every AI differently",
+      "AI #3's zero-hallucination approach is the safest foundation for a correction loop",
+      "AI #4 proves that confidence without accuracy is the most dangerous output mode — DecipherKit must prevent this",
+      "The notepad (structured, multi-column handwriting) is dramatically harder than sticky notes (large, isolated text) for all AIs",
+      "Structural notation (dashes, arrows, parentheses) was missed or misinterpreted by 3 of 4 AIs"
+    ],
+    "product_implications": [
+      "DecipherKit v0.4 should combine AI #2's glyph map accuracy with AI #3's hallucination-free approach",
+      "Confidence calibration metric needed — users must know when to trust output and when to verify",
+      "Correction loop is the real product moat — each correction makes the next read better",
+      "Multi-surface synthesis (reading across images) is a differentiator no raw AI does well",
+      "Market positioning: 'Every AI we tested gets your handwriting wrong half the time. DecipherKit learns YOUR writing.'"
+    ]
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "meta": {
+    "version": "0.2",
+    "writer": "JayTee",
+    "created": "2026-03-19",
+    "source": "4 photographs (sticky notes + spiral notepad)",
+    "status": "validated_baseline",
+    "correction_count": 0
+  },
+  "reliable_forms": {
+    "capitals": ["C", "F", "V", "S", "T", "A", "M", "O", "P", "N", "H"],
+    "always_clean_words": [
+      "Claude", "Forge", "Vibe", "OpenClaw", "Command",
+      "Center", "Code", "Cowork", "Build", "Local", "Connect", "Move"
+    ]
+  },
+  "problem_zones": [
+    {
+      "id": "pz-001",
+      "letter": "a",
+      "case": "lowercase",
+      "confusion_targets": ["u", "o"],
+      "example": "Tracks misread as Tracker",
+      "rule": "When lowercase 'a' is ambiguous, prefer 'a' if word context matches a known vocabulary item"
+    },
+    {
+      "id": "pz-002",
+      "letter": "p",
+      "case": "lowercase",
+      "confusion_targets": ["es", "de"],
+      "context": "fast writing",
+      "example": "Rep Plan misread as Redesign or Design",
+      "rule": "When 'p' appears ambiguous in fast writing, check if preceding letters form a known word stem with 'p'"
+    },
+    {
+      "id": "pz-003",
+      "type": "trailing_compression",
+      "description": "End-of-word letters trail off or compress",
+      "rule": "Weight first 2-3 letters most heavily and infer endings from context. Do NOT guess full word from trailing strokes alone."
+    },
+    {
+      "id": "pz-004",
+      "type": "rotation",
+      "description": "Words written at angles (sideways, upside-down on stickies)",
+      "rule": "Detect rotation before transcription. If text appears at non-standard angle, mentally rotate before reading."
+    },
+    {
+      "id": "pz-005",
+      "type": "color_identification",
+      "description": "Pink, green, and yellow stickies confused across AI systems",
+      "rule": "Color = category signal. Report color accurately. When uncertain, flag confidence. Never default to 'yellow'."
+    }
+  ],
+  "structural_notation": {
+    "asterisk": {
+      "symbol": "*",
+      "meaning": "priority or action item",
+      "preserve": true
+    },
+    "arrow_left": {
+      "symbol": "←",
+      "meaning": "relational pointer — spatial connection, not just textual",
+      "preserve": true
+    },
+    "arrow_right": {
+      "symbol": "→",
+      "meaning": "relational pointer — spatial connection, not just textual",
+      "preserve": true
+    },
+    "double_dash": {
+      "symbol": "– –",
+      "meaning": "section or phase separator within a document",
+      "preserve": true
+    },
+    "parentheses": {
+      "symbol": "()",
+      "meaning": "qualifier or methodology label — e.g. (Audit) means audit methodology applies to preceding item",
+      "preserve": true
+    },
+    "underline": {
+      "meaning": "task separator — divides distinct action items on same surface",
+      "preserve": true
+    },
+    "sticky_color": {
+      "meaning": "category signal — must be tracked and reported accurately",
+      "preserve": true
+    },
+    "physical_layout": {
+      "meaning": "relational grouping — arrows + proximity = connected concepts",
+      "preserve": true
+    },
+    "paperclip": {
+      "meaning": "physical attachment — two notes are a unit",
+      "preserve": true
+    }
+  },
+  "failure_modes": {
+    "context_bias": {
+      "severity": "critical",
+      "description": "AI reads what it expects, not what's written",
+      "example": "Procurement OS misread as Estimate OS due to prior context",
+      "mitigation": "Read letterforms FIRST, apply context as SECONDARY signal"
+    },
+    "no_cross_reference": {
+      "severity": "high",
+      "description": "Same note partially visible across images treated independently",
+      "mitigation": "MUST synthesize across multiple input images"
+    },
+    "hallucination": {
+      "severity": "critical",
+      "description": "Unclear letterforms produce fabricated plausible phrases",
+      "examples": ["Forge Embed Code", "Scrambled with", "Voice control"],
+      "mitigation": "Confidence threshold required. Flag uncertain reads explicitly. Never fabricate."
+    },
+    "color_misidentification": {
+      "severity": "medium",
+      "description": "Pink and green stickies called yellow",
+      "mitigation": "Identify color independently before transcription. Use lighting/shadow analysis."
+    },
+    "structural_ignored": {
+      "severity": "high",
+      "description": "Double-dash separators, arrows, parenthetical qualifiers skipped or treated as decoration",
+      "mitigation": "All structural notation carries semantic meaning. Always preserve and report."
+    }
+  },
+  "known_vocabulary": [
+    "OpenClaw", "VibeForge Studios", "Forge Command Center", "Claude Code",
+    "Claude Cowork", "Procurement OS", "Estimate OS", "Transplant Tracker",
+    "DecipherKit", "VCE", "ChurnWise", "CerebraSpark",
+    "Rep Plan", "Tracks", "Token Usage", "Mobile Control",
+    "Siri", "iPad", "Executive Branches", "agents", "F500",
+    "Mapping", "Structure", "Audit", "Phase"
+  ],
+  "corrections": []
+}

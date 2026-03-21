@@ -1,0 +1,267 @@
+{
+  "meta": {
+    "version": "0.3",
+    "writer": "JayTee",
+    "created": "2026-03-19",
+    "updated": "2026-03-19",
+    "source": "4 photographs (sticky notes + spiral notepad)",
+    "status": "benchmark_validated",
+    "correction_count": 8,
+    "benchmark_note": "v0.3 applies confidence gate from AI #2 benchmark audit. Glyph map corrections ONLY fire when raw letterform confidence < 70%. Above that threshold, trust letterforms over vocabulary matching."
+  },
+  "confidence_gate": {
+    "description": "Known vocabulary matching is a double-edged sword. It fixes genuine ambiguity (Rep Plan, Tracks) but causes context bleed when applied to clear letterforms (injecting 'Siri' where 'gives' was clearly written).",
+    "rule": "Glyph map corrections and known vocabulary matching ONLY apply when raw letterform confidence is BELOW 70%. Above 70%, the raw read stands — do NOT override clear letterforms with 'more familiar' words.",
+    "threshold": 0.70,
+    "examples": {
+      "correct_application": {
+        "word": "Rep Plan",
+        "raw_confidence": 0.55,
+        "action": "Applied pz-002 because letterforms were genuinely ambiguous (p vs es/de)",
+        "result": "Correct"
+      },
+      "incorrect_application": {
+        "word": "gives",
+        "raw_confidence": 0.82,
+        "action": "Should NOT have overridden with 'Siri' from known vocabulary",
+        "result": "Context bleed — hallucinated familiar word over clear letterforms"
+      }
+    }
+  },
+  "reliable_forms": {
+    "capitals": ["C", "F", "V", "S", "T", "A", "M", "O", "P", "N", "H"],
+    "always_clean_words": [
+      "Claude", "Forge", "Vibe", "OpenClaw", "Command",
+      "Center", "Code", "Cowork", "Build", "Local", "Connect", "Move"
+    ]
+  },
+  "problem_zones": [
+    {
+      "id": "pz-001",
+      "letter": "a",
+      "case": "lowercase",
+      "confusion_targets": ["u", "o"],
+      "example": "Tracks misread as Tracker",
+      "rule": "When lowercase 'a' is ambiguous AND raw confidence < 70%, prefer 'a' if word context matches a known vocabulary item",
+      "benchmark_result": "Correctly fixed 'Tracks' in both AI #2 and #3"
+    },
+    {
+      "id": "pz-002",
+      "letter": "p",
+      "case": "lowercase",
+      "confusion_targets": ["es", "de"],
+      "context": "fast writing",
+      "example": "Rep Plan misread as Redesign or Design",
+      "rule": "When 'p' appears ambiguous in fast writing AND raw confidence < 70%, check if preceding letters form a known word stem with 'p'",
+      "benchmark_result": "Correctly fixed 'Rep Plan' in AI #2 and #3. AI #1 missed this."
+    },
+    {
+      "id": "pz-003",
+      "type": "trailing_compression",
+      "description": "End-of-word letters trail off or compress",
+      "rule": "Weight first 2-3 letters most heavily and infer endings from context. Do NOT guess full word from trailing strokes alone.",
+      "benchmark_result": "Correctly handled 'Studios' and 'Procurement OS'. Over-applied on notepad causing 'Post Tracking' hallucination."
+    },
+    {
+      "id": "pz-004",
+      "type": "rotation",
+      "description": "Words written at angles (sideways, upside-down on stickies)",
+      "rule": "Detect rotation before transcription. If text appears at non-standard angle, mentally rotate before reading.",
+      "benchmark_result": "Correctly applied on 3 surfaces (Vibe Forge Studios, Forge Command Center, OpenClaw)"
+    },
+    {
+      "id": "pz-005",
+      "type": "color_identification",
+      "description": "Pink, green, and yellow stickies confused across AI systems",
+      "rule": "Color = category signal. Report color accurately. When uncertain, flag confidence. Never default to 'yellow'.",
+      "benchmark_result": "AI #2 got colors right (3 pink, 3 yellow/green, 1 white). AI #1 misidentified pink as yellow."
+    },
+    {
+      "id": "pz-006",
+      "type": "context_bleed",
+      "description": "Known vocabulary from one surface bleeds into reads of another surface",
+      "rule": "Each surface is an independent read. Do NOT let words from Surface A influence reads on Surface B. The confidence gate (70% threshold) is the primary defense.",
+      "benchmark_result": "NEW in v0.3. Added because AI #2 injected 'Siri' (from the yellow sticky) into the notepad where 'gives' was clearly written.",
+      "examples_of_bleed": [
+        "Siri (from sticky) → injected into notepad line where 'gives' was written",
+        "Tracker (from vocabulary) → injected as notepad line 1 where 'OpenClaw' was written"
+      ]
+    }
+  ],
+  "structural_notation": {
+    "asterisk": {
+      "symbol": "*",
+      "meaning": "priority or action item",
+      "preserve": true
+    },
+    "arrow_left": {
+      "symbol": "←",
+      "meaning": "relational pointer — spatial connection, not just textual",
+      "preserve": true,
+      "benchmark_note": "Found on '← are we connected?' sticky — resolved via cross-image synthesis in AI #3"
+    },
+    "arrow_right": {
+      "symbol": "→",
+      "meaning": "relational pointer — spatial connection, not just textual",
+      "preserve": true
+    },
+    "double_dash": {
+      "symbol": "– –",
+      "meaning": "phase separator — separates planning phases (e.g., Structure/Audit phase from Rep Plan/Fix-Test action phase)",
+      "preserve": true,
+      "benchmark_note": "AI #2 mischaracterized as 'planning items vs action items'. Correct interpretation: phase boundary."
+    },
+    "parentheses": {
+      "symbol": "()",
+      "meaning": "qualifier or methodology label — e.g. (Audit) means audit methodology applies to preceding item",
+      "preserve": true
+    },
+    "underline": {
+      "meaning": "task separator — divides distinct action items on same surface",
+      "preserve": true
+    },
+    "sticky_color": {
+      "meaning": "category signal — must be tracked and reported accurately",
+      "preserve": true
+    },
+    "physical_layout": {
+      "meaning": "relational grouping — arrows + proximity = connected concepts",
+      "preserve": true
+    },
+    "paperclip": {
+      "meaning": "physical attachment — two notes are a unit",
+      "preserve": true,
+      "benchmark_note": "OpenClaw green sticky paperclipped to '← are we connected?' pink sticky. Both AIs detected this."
+    },
+    "flanking_dashes": {
+      "symbol": "— word —",
+      "meaning": "section divider within a list — the flanked word labels the section boundary",
+      "preserve": true,
+      "benchmark_note": "NEW in v0.3. '— gives —' in notepad right column is a section divider, not a standalone word."
+    }
+  },
+  "failure_modes": {
+    "context_bias": {
+      "severity": "critical",
+      "description": "AI reads what it expects, not what's written",
+      "example": "Procurement OS misread as Estimate OS due to prior context",
+      "mitigation": "Read letterforms FIRST, apply context as SECONDARY signal. Confidence gate enforces this."
+    },
+    "vocabulary_bleed": {
+      "severity": "critical",
+      "description": "Known vocabulary from one surface contaminates reads on another surface",
+      "examples": ["'Siri' from sticky injected into notepad where 'gives' was written", "'Tracker' injected where 'OpenClaw' was clearly written on notepad"],
+      "mitigation": "Confidence gate at 70%. Each surface is an independent read context. Do NOT let Surface A vocab influence Surface B."
+    },
+    "no_cross_reference": {
+      "severity": "high",
+      "description": "Same note partially visible across images treated independently",
+      "mitigation": "MUST synthesize across multiple input images. AI #2 failed on '← are we connected?' which was resolvable."
+    },
+    "hallucination": {
+      "severity": "critical",
+      "description": "Unclear letterforms produce fabricated plausible phrases",
+      "examples": ["Forge Embed Code", "Scrambled with", "Voice control", "Post Tracking", "Vis Token"],
+      "mitigation": "Confidence threshold required. Flag uncertain reads explicitly. Never fabricate. 'Post Tracking' and 'Vis Token' were hallucinated in AI #2."
+    },
+    "color_misidentification": {
+      "severity": "medium",
+      "description": "Pink and green stickies called yellow",
+      "mitigation": "Identify color independently before transcription. Use lighting/shadow analysis."
+    },
+    "structural_ignored": {
+      "severity": "high",
+      "description": "Double-dash separators, arrows, parenthetical qualifiers skipped or treated as decoration",
+      "mitigation": "All structural notation carries semantic meaning. Always preserve and report."
+    },
+    "surface_missed": {
+      "severity": "high",
+      "description": "Entire surfaces missed — especially edge-visible or partially obscured notes",
+      "examples": ["Procurement OS manila sticky missed by both AI #1 and AI #2"],
+      "mitigation": "Scan ALL edges of every image. Partial text at image boundaries must be reported even if only 2-3 characters are visible."
+    }
+  },
+  "known_vocabulary": [
+    "OpenClaw", "VibeForge Studios", "Forge Command Center", "Claude Code",
+    "Claude Cowork", "Procurement OS", "Estimate OS", "Transplant Tracker",
+    "DecipherKit", "VCE", "ChurnWise", "CerebraSpark",
+    "Rep Plan", "Tracks", "Token Usage", "Mobile Control",
+    "Siri", "iPad", "Executive Branches", "agents", "F500",
+    "Mapping", "Structure", "Audit", "Phase",
+    "A Full Siri Record APP"
+  ],
+  "corrections": [
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "A Full Suite APP",
+      "corrected": "A Full Siri Record APP",
+      "surface": "yellow_sticky",
+      "rule_applied": "none — missed word entirely",
+      "note": "Dropped 'Record' and misread 'Siri' as 'Suite'"
+    },
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "Tracker",
+      "corrected": "OpenClaw",
+      "surface": "notepad_left_col_line1",
+      "rule_applied": "none — context bias, capital O was clear",
+      "note": "First word in left column is clearly 'OpenClaw', not 'Tracker'"
+    },
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "— Siri —",
+      "corrected": "— gives —",
+      "surface": "notepad_right_col",
+      "rule_applied": "pz-006 (context bleed)",
+      "note": "Siri vocabulary from sticky note bled into notepad read. Letterforms clearly show 'gives'."
+    },
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "Post Tracking",
+      "corrected": "real feedback",
+      "surface": "notepad_right_col",
+      "rule_applied": "hallucination",
+      "note": "Fabricated plausible phrase"
+    },
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "Vis Token",
+      "corrected": "on token",
+      "surface": "notepad_right_col",
+      "rule_applied": "hallucination",
+      "note": "First two characters are 'o-n', not 'V-i-s'"
+    },
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "FLAG (too obscured)",
+      "corrected": "← are we connected?",
+      "surface": "pink_sticky_paperclipped",
+      "rule_applied": "cross-image synthesis failure",
+      "note": "Should have been resolved by comparing Images 1 and 3. Arrow is structural notation."
+    },
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "(missed)",
+      "corrected": "Procurement OS",
+      "surface": "manila_sticky_edge",
+      "rule_applied": "surface_missed failure mode",
+      "note": "Visible at edge of Images 1 and 4. Manila/tan color distinct from yellow and pink."
+    },
+    {
+      "timestamp": "2026-03-19T00:00:00Z",
+      "source": "benchmark_ai2_audit",
+      "original": "double dash = planning vs action",
+      "corrected": "double dash = phase separator",
+      "surface": "notepad_structural",
+      "rule_applied": "structural notation misinterpretation",
+      "note": "Separates phases (Structure/Audit → Rep Plan/Fix-Test), not 'planning vs action items'"
+    }
+  ]
+}

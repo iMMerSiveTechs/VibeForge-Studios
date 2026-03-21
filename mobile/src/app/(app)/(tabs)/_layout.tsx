@@ -10,6 +10,7 @@ import {
   CreditCard,
   KeyRound,
   MessageSquarePlus,
+  FileText,
 } from "lucide-react-native";
 import { C } from "@/theme/colors";
 import { useFeatureFlags } from "@/lib/feature-flags";
@@ -88,6 +89,15 @@ export default function TabLayout() {
           href: showAudio ? undefined : null,
           tabBarIcon: ({ color }: { color: string }) => (
             <Music size={18} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="decipher"
+        options={{
+          title: "Decipher",
+          tabBarIcon: ({ color }: { color: string }) => (
+            <FileText size={18} color={color} />
           ),
         }}
       />

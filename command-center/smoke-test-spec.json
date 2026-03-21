@@ -1,0 +1,80 @@
+{
+  "name": "Renderer Smoke Test",
+  "start": "main",
+  "screens": {
+    "main": {
+      "title": "Renderer Smoke Test",
+      "body": [
+        { "type": "text", "variant": "h1", "value": "Renderer Smoke Test" },
+        { "type": "text", "variant": "body", "value": "This spec tests every supported node type in the current VF_APP preview renderer." },
+        { "type": "spacer" },
+
+        { "type": "card", "children": [
+          { "type": "text", "variant": "h2", "value": "Metrics" },
+          { "type": "row", "children": [
+            { "type": "metric", "label": "Items", "value": "0" },
+            { "type": "metric", "label": "Status", "value": "Ready" }
+          ]}
+        ]},
+
+        { "type": "divider" },
+
+        { "type": "text", "variant": "h2", "value": "Add an Item" },
+        { "type": "input", "key": "newItem", "label": "Item Name", "placeholder": "Type something here" },
+        {
+          "type": "button",
+          "label": "Add Item",
+          "action": {
+            "type": "append",
+            "path": "items",
+            "value": { "title": "New item", "note": "Added via button" }
+          }
+        },
+        {
+          "type": "button",
+          "label": "Clear Input",
+          "variant": "ghost",
+          "action": { "type": "set", "path": "newItem", "value": "" }
+        },
+
+        { "type": "divider" },
+
+        { "type": "text", "variant": "h2", "value": "Item List" },
+        { "type": "list", "key": "items", "titleKey": "title", "subtitleKey": "note" },
+
+        { "type": "divider" },
+
+        { "type": "text", "variant": "h2", "value": "Toggle" },
+        { "type": "toggle", "key": "darkMode", "label": "Dark Mode" },
+
+        { "type": "divider" },
+
+        { "type": "text", "variant": "h2", "value": "Navigation" },
+        {
+          "type": "button",
+          "label": "Go to Second Screen",
+          "variant": "accent",
+          "action": { "type": "nav", "to": "second" }
+        },
+
+        { "type": "spacer" },
+        { "type": "text", "variant": "caption", "value": "End of smoke test — main screen" }
+      ]
+    },
+    "second": {
+      "title": "Second Screen",
+      "body": [
+        { "type": "text", "variant": "h1", "value": "Second Screen" },
+        { "type": "text", "variant": "body", "value": "Navigation works. Use the Back button to return." },
+        {
+          "type": "button",
+          "label": "Toast Test",
+          "variant": "secondary",
+          "action": { "type": "toast", "message": "Toast from second screen!" }
+        },
+        { "type": "spacer" },
+        { "type": "text", "variant": "caption", "value": "End of smoke test — second screen" }
+      ]
+    }
+  }
+}
