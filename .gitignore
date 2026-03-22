@@ -33,3 +33,7 @@ tmp-images/
 # IDE
 .vscode/
 .idea/
+backend/prisma/dev.db-shm
+backend/prisma/dev.db-wal
+decipher-web/
+companion/

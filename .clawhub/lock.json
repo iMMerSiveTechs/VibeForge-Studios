@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "skills": {
+    "workspace-review": {
+      "version": "1.0.2",
+      "installedAt": 1773800066159
+    },
+    "claude-code": {
+      "version": "1.0.0",
+      "installedAt": 1773985575206
+    },
+    "self-improving": {
+      "version": "1.2.16",
+      "installedAt": 1774032917312
+    },
+    "ontology": {
+      "version": "1.0.4",
+      "installedAt": 1774032918836
+    },
+    "moltguard": {
+      "version": "6.8.16",
+      "installedAt": 1774032922849
+    },
+    "mcporter": {
+      "version": "1.0.0",
+      "installedAt": 1774032924639
+    },
+    "admapix": {
+      "version": "1.0.25",
+      "installedAt": 1774032927028
+    },
+    "nano-banana-pro": {
+      "version": "1.0.1",
+      "installedAt": 1774032961331
+    }
+  }
+}

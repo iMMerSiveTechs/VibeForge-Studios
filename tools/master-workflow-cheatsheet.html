@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>JayTee's Master Workflow Cheatsheet</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <style>
+ body { background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%); color: #e2e8f0; }
+ .section-card { transition: max-height 0.3s ease, opacity 0.3s ease; max-height: 1000px; opacity: 1; }
+ .section-card.collapsed { max-height: 0; opacity: 0; overflow: hidden; }
+ .header-btn { transition: all 0.3s ease; }
+ .header-btn:hover { transform: translateX(4px); }
+ .model-card { border-left: 4px solid #3b82f6; transition: all 0.3s ease; }
+ .model-card:hover { transform: translateX(4px); border-left-color: #10b981; }
+ .integration-node { position: relative; padding: 12px 16px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; margin: 8px 0; }
+ .integration-arrow { color: #10b981; margin: 0 8px; font-weight: bold; }
+ .command-block { background: rgba(15, 23, 42, 0.8); border-left: 3px solid #10b981; padding: 12px; margin: 8px 0; border-radius: 4px; font-family: 'Monaco', 'Courier New', monospace; font-size: 13px; overflow-x: auto; }
+ .command-block code { color: #a3e635; }
+ .copy-btn { opacity: 0; transition: opacity 0.2s; cursor: pointer; float: right; padding: 4px 8px; font-size: 12px; color: #64748b; }
+ .command-block:hover .copy-btn { opacity: 1; }
+ .copy-btn:hover { color: #a3e635; }
+ .tool-badge { display: inline-block; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); padding: 4px 10px; border-radius: 12px; font-size: 12px; margin: 2px; }
+ .rank-badge { display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; min-width: 32px; text-align: center; }
+ .checklist-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(100, 116, 139, 0.1); }
+ .checklist-item:last-child { border-bottom: none; }
+ .checklist-item input[type="checkbox"] { margin-right: 12px; cursor: pointer; }
+ .search-input { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(59, 130, 246, 0.3); color: #e2e8f0; padding: 10px 12px; border-radius: 6px; }
+ .search-input:focus { outline: none; border-color: #3b82f6; background: rgba(30, 41, 59, 0.9); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+ .quota-bar { background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%); border-radius: 4px; height: 8px; overflow: hidden; }
+ .quota-used { background: linear-gradient(90deg, #ef4444 0%, #f97316 100%); height: 100%; }
+ .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+ @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+ </style>
+</head>
+<body class="min-h-screen p-6">
+ <div class="max-w-7xl mx-auto">
+ <div class="mb-8">
+ <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">JayTee's Master Workflow Cheatsheet</h1>
+ <p class="text-slate-400">Solo dev/entrepreneur daily reference — Last updated: March 21, 2026</p>
+ </div>
+ <div class="mb-8">
+ <input type="text" id="globalSearch" class="search-input w-full" placeholder="🔍 Search across all sections...">
+ </div>
+ <div class="grid-2 mb-8">
+ <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+ <h3 class="text-sm font-semibold text-slate-400 mb-2">MONTHLY SPEND</h3>
+ <p class="text-3xl font-bold">~$300</p>
+ <div class="text-xs text-slate-500 mt-2">
+ <div>• Anthropic Max (iOS): ~$200</div>
+ <div>• ChatGPT Plus: ~$20</div>
+ <div>• Google AI Pro: ~$20</div>
+ <div>• Misc (hosting/domains): ~$60</div>
+ </div>
+ </div>
+ <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+ <h3 class="text-sm font-semibold text-slate-400 mb-2">REVENUE TARGET</h3>
+ <p class="text-3xl font-bold">$1,500/mo</p>
+ <div class="text-xs text-slate-500 mt-2">
+ <div>5x monthly costs minimum</div>
+ <div>9 active revenue streams</div>
+ <div>DecipherKit closest to launch</div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Google AI Pro Quotas -->
+ <div class="bg-slate-800 rounded-lg border border-slate-700 mb-6 overflow-hidden">
+ <button class="header-btn w-full p-6 flex items-center justify-between hover:bg-slate-700 transition" onclick="toggleSection(this)">
+ <div class="flex items-center gap-3">
+ <span class="text-2xl">📊</span>
+ <div class="text-left">
+ <h2 class="text-xl font-bold">Google AI Pro Quotas & Limits</h2>
+ <p class="text-sm text-slate-400">$20/mo subscription firepower</p>
+ </div>
+ </div>
+ <span class="text-slate-400">▼</span>
+ </button>
+ <div class="section-card border-t border-slate-700 p-6 space-y-4">
+ <div><h4 class="font-semibold">Gemini 3.1 Pro</h4><span class="tool-badge">Complex Architecture</span><p class="text-sm text-slate-400">Weekly limit • $25 per 2,500 extra credits</p></div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold">Nano Banana 2</h4><span class="tool-badge">100 images/day</span><p class="text-sm text-slate-400">Standard first → "Redo with Pro" for HD upscale</p></div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold">Veo</h4><span class="tool-badge quota-critical">3 videos/day</span><p class="text-sm text-slate-400">⚠️ ALWAYS use reference images, never raw text</p></div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold">Lyria 3</h4><span class="tool-badge">Music 30-sec tracks</span><p class="text-sm text-slate-400">SynthID watermark included</p></div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold">Google Flow</h4><span class="tool-badge">1,000 credits/mo</span><p class="text-sm text-slate-400">Multi-scene video at flow.google.com</p></div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold">Gemini Live</h4><span class="tool-badge quota-good">Unlimited</span><p class="text-sm text-slate-400">Real-time voice + screen sharing on mobile</p></div>
+ </div>
+ </div>
+
+ <!-- Model Routing -->
+ <div class="bg-slate-800 rounded-lg border border-slate-700 mb-6 overflow-hidden">
+ <button class="header-btn w-full p-6 flex items-center justify-between hover:bg-slate-700 transition" onclick="toggleSection(this)">
+ <div class="flex items-center gap-3">
+ <span class="text-2xl">🎯</span>
+ <div class="text-left">
+ <h2 class="text-xl font-bold">Model Routing Strategy</h2>
+ <p class="text-sm text-slate-400">Right model for right task</p>
+ </div>
+ </div>
+ <span class="text-slate-400">▼</span>
+ </button>
+ <div class="section-card border-t border-slate-700 p-6 space-y-3">
+ <div class="model-card bg-slate-900 p-4 rounded"><h4 class="font-semibold text-red-400">⚡ Quick UI Fixes</h4><p class="text-xs text-slate-500">→ Gemini Flash or Claude Haiku</p></div>
+ <div class="model-card bg-slate-900 p-4 rounded"><h4 class="font-semibold text-yellow-400">📦 Boilerplate & Tests</h4><p class="text-xs text-slate-500">→ Gemini Flash or Claude Sonnet</p></div>
+ <div class="model-card bg-slate-900 p-4 rounded"><h4 class="font-semibold text-blue-400">🏗️ Complex Architecture</h4><p class="text-xs text-slate-500">→ Gemini 3.1 Pro or Claude Opus</p></div>
+ <div class="model-card bg-slate-900 p-4 rounded"><h4 class="font-semibold text-purple-400">🔍 Deep Debugging</h4><p class="text-xs text-slate-500">→ Claude Opus (best at systematic analysis)</p></div>
+ <div class="model-card bg-slate-900 p-4 rounded"><h4 class="font-semibold text-green-400">🎨 Image Assets</h4><p class="text-xs text-slate-500">→ Nano Banana 2 (standard → "Redo with Pro")</p></div>
+ <div class="model-card bg-slate-900 p-4 rounded"><h4 class="font-semibold text-pink-400">🎬 Video</h4><p class="text-xs text-slate-500">→ Veo (3/day, ALWAYS reference images)</p></div>
+ <div class="model-card bg-slate-900 p-4 rounded"><h4 class="font-semibold text-cyan-400">🎵 Audio</h4><p class="text-xs text-slate-500">→ Lyria 3 (30-sec, SynthID watermark)</p></div>
+ </div>
+ </div>
+
+ <!-- Agent Triangle -->
+ <div class="bg-slate-800 rounded-lg border border-slate-700 mb-6 overflow-hidden">
+ <button class="header-btn w-full p-6 flex items-center justify-between hover:bg-slate-700 transition" onclick="toggleSection(this)">
+ <div class="flex items-center gap-3">
+ <span class="text-2xl">🔺</span>
+ <div class="text-left">
+ <h2 class="text-xl font-bold">Agent Triangle</h2>
+ <p class="text-sm text-slate-400">Your AI workforce</p>
+ </div>
+ </div>
+ <span class="text-slate-400">▼</span>
+ </button>
+ <div class="section-card border-t border-slate-700 p-6 space-y-3">
+ <div class="model-card bg-slate-900 border-l-blue-500 p-4 rounded"><h4 class="font-semibold text-blue-400">OpenClaw</h4><p class="text-sm text-slate-400">Orchestration, deployment, system-level, iMessage relay, cron, multi-agent coordination</p></div>
+ <div class="model-card bg-slate-900 border-l-green-500 p-4 rounded"><h4 class="font-semibold text-green-400">Forge</h4><p class="text-sm text-slate-400">Main project agent, VibeForge/DecipherKit, direct JayTee comms via iMessage group</p></div>
+ <div class="model-card bg-slate-900 border-l-purple-500 p-4 rounded"><h4 class="font-semibold text-purple-400">Dispatch (Claude Desktop)</h4><p class="text-sm text-slate-400">Deep thinking, planning, research, scaffolding, file creation</p></div>
+ <div class="model-card bg-slate-900 border-l-orange-500 p-4 rounded"><h4 class="font-semibold text-orange-400">Gemini</h4><p class="text-sm text-slate-400">Cheap bulk work, images/video/audio, Firebase integration, AI Studio prototyping</p></div>
+ <div class="bg-slate-900 p-4 rounded border border-slate-600 mt-4">
+ <p class="text-sm text-slate-300"><strong>Communication:</strong> Transcript file → Forge reads & relays to group iMessage with [Agent | Project] headers → JayTee sees everything in one thread</p>
+ </div>
+ </div>
+ </div>
+
+ <!-- Terminal Commands -->
+ <div class="bg-slate-800 rounded-lg border border-slate-700 mb-6 overflow-hidden">
+ <button class="header-btn w-full p-6 flex items-center justify-between hover:bg-slate-700 transition" onclick="toggleSection(this)">
+ <div class="flex items-center gap-3">
+ <span class="text-2xl">⌨️</span>
+ <div class="text-left">
+ <h2 class="text-xl font-bold">Terminal Quick Commands</h2>
+ <p class="text-sm text-slate-400">Copy-paste ready</p>
+ </div>
+ </div>
+ <span class="text-slate-400">▼</span>
+ </button>
+ <div class="section-card border-t border-slate-700 p-6 space-y-4">
+ <div><h4 class="font-semibold text-green-400 mb-2">🤖 Auto-Debug</h4>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>node tools/auto-debug.mjs src/App.tsx</code></div>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>node tools/auto-debug.mjs src/App.tsx --dry-run</code></div>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>node tools/auto-debug.mjs src/App.tsx --diff</code></div>
+ </div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold text-pink-400 mb-2">📱 Expo</h4>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>npx create-expo-app my-app && cd my-app && npx expo start</code></div>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>eas build --platform ios --profile preview</code></div>
+ </div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold text-orange-400 mb-2">🔥 Firebase</h4>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>npm install -g firebase-tools && firebase login && firebase init</code></div>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>firebase deploy</code></div>
+ </div>
+ <div class="border-t border-slate-700 pt-4"><h4 class="font-semibold text-blue-400 mb-2">🐙 Git</h4>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>git add . && git commit -m "feat: description" && git push</code></div>
+ <div class="command-block"><span class="copy-btn" onclick="copyCommand(this)">Copy</span><code>git checkout -- filename.js</code></div>
+ </div>
+ </div>
+ </div>
+
+ <div class="bg-slate-900 border border-slate-700 rounded-lg p-6 text-center text-slate-400 text-sm">
+ <p>📌 Bookmark this page. Check quotas every morning. Ship DecipherKit first.</p>
+ </div>
+ </div>
+ <script>
+ function toggleSection(button) { const card = button.nextElementSibling; card.classList.toggle('collapsed'); const arrow = button.querySelector('span:last-child'); arrow.textContent = card.classList.contains('collapsed') ? '▶' : '▼'; }
+ function copyCommand(btn) { const code = btn.nextElementSibling.textContent; navigator.clipboard.writeText(code); btn.textContent = '✓'; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); }
+ document.getElementById('globalSearch').addEventListener('input', function(e) { const q = e.target.value.toLowerCase(); document.querySelectorAll('.section-card').forEach(s => { const t = s.parentElement.textContent.toLowerCase(); if (q === '' || t.includes(q)) s.classList.remove('collapsed'); else s.classList.add('collapsed'); }); });
+ </script>
+</body>
+</html>
