@@ -1,0 +1,94 @@
+# Brain Bus 7-step proof harness CI check
+# Per Gep's PR-gate spec (2026-05-10) and Clark's branch protection recommendation.
+# Runs on PRs that touch _bridge/ or **/brain-bus/.
+# All 7 steps must pass. Failure blocks merge per CODEOWNERS rule.
+
+name: Brain Bus Proof Harness
+
+on:
+  pull_request:
+    paths:
+      - "_bridge/**"
+      - "**/brain-bus/**"
+      - "**/brain_bus/**"
+      - ".github/workflows/brain-bus-proof-harness.yml"
+
+jobs:
+  proof-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Brain Bus likely needs SQLite (stdlib) + pytest
+          pip install pytest
+
+      - name: Step 1 — Test fixture creates one task in _bridge/inboxes/gep/
+        run: |
+          # Codex must implement: tests/brain_bus/test_step1_create_task.py
+          # Should create a fixture .md file at _bridge/inboxes/gep/test-task.md
+          # Asserts: file exists with expected content
+          test -f tests/brain_bus/test_step1_create_task.py || (echo "MISSING TEST: tests/brain_bus/test_step1_create_task.py"; exit 1)
+          pytest tests/brain_bus/test_step1_create_task.py -v
+
+      - name: Step 2 — Worker claims the task
+        run: |
+          # Asserts: SQLite ledger shows task with status=claimed, lease_expires set
+          test -f tests/brain_bus/test_step2_worker_claims.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_step2_worker_claims.py -v
+
+      - name: Step 3 — Provider/mock returns response
+        run: |
+          # Asserts: mock provider invoked, response captured
+          test -f tests/brain_bus/test_step3_provider_response.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_step3_provider_response.py -v
+
+      - name: Step 4 — Outbox file appears
+        run: |
+          # Asserts: file exists at _bridge/outboxes/gep/{task-id}.md
+          test -f tests/brain_bus/test_step4_outbox_appears.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_step4_outbox_appears.py -v
+
+      - name: Step 5 — Job marked done in ledger
+        run: |
+          # Asserts: SQLite ledger row status=done, finished_at set
+          test -f tests/brain_bus/test_step5_job_done.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_step5_job_done.py -v
+
+      - name: Step 6 — Second run does not duplicate output
+        run: |
+          # Asserts: re-running worker on same task = no new outbox file (or hash matches)
+          test -f tests/brain_bus/test_step6_no_duplicate.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_step6_no_duplicate.py -v
+
+      - name: Step 7 — Status file proves heartbeat
+        run: |
+          # Asserts: heartbeat JSON exists with timestamp newer than worker start
+          test -f tests/brain_bus/test_step7_heartbeat.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_step7_heartbeat.py -v
+
+      - name: Bonus — Duplicate fixture test
+        run: |
+          # Asserts: same task created twice = only one execution (claim/lease prevents)
+          test -f tests/brain_bus/test_bonus_duplicate_fixture.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_bonus_duplicate_fixture.py -v
+
+      - name: Bonus — Malformed fixture test
+        run: |
+          # Asserts: broken task → quarantined, worker continues
+          test -f tests/brain_bus/test_bonus_malformed_fixture.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_bonus_malformed_fixture.py -v
+
+      - name: Bonus — Restart/lease-expiry test
+        run: |
+          # Asserts: worker dies mid-task → another picks up after lease expires
+          test -f tests/brain_bus/test_bonus_lease_expiry.py || (echo "MISSING TEST"; exit 1)
+          pytest tests/brain_bus/test_bonus_lease_expiry.py -v
