@@ -60,3 +60,20 @@ Then:
 ```bash
 launchctl load ~/Library/LaunchAgents/com.vibeforge.gordonbridge.plist
 ```
+
+## One-command launchd deploy (macOS)
+```bash
+cd bridge
+./install_launchd.sh
+launchctl print gui/$(id -u)/com.vibeforge.gordonbridge | head -40
+```
+
+## Paperclip task submitter
+```bash
+cd bridge
+python paperclip_submitter.py "Wake Gordon and summarize today's queue" --priority high
+# discover likely API routes
+python paperclip_submitter.py "placeholder" --probe
+# validate payload without sending
+python paperclip_submitter.py "placeholder" --dry-run
+```
