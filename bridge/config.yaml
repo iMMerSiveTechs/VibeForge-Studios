@@ -1,0 +1,21 @@
+headless: false
+output_root: /vault/_bridge/archives
+state_root: ./state
+scroll_rounds: 30
+platform_order:
+  - grok
+  - chatgpt
+  - gemini
+  - claude
+  - perplexity
+platforms:
+  grok:
+    storage_state: ./state/grok.storage_state.json
+  chatgpt:
+    storage_state: ./state/chatgpt.storage_state.json
+  gemini:
+    storage_state: ./state/gemini.storage_state.json
+  claude:
+    storage_state: ./state/claude.storage_state.json
+  perplexity:
+    storage_state: ./state/perplexity.storage_state.json
