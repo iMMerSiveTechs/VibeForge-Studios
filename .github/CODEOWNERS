@@ -16,3 +16,6 @@ pilots/bridge-append/* @iMMerSiveTechs
 
 # Lead researcher (4 AM cron — proof point for parser fix)
 overnight-scripts/lead_researcher.py @iMMerSiveTechs
+
+# Clark added 01-Agents/* path on review (charter docs are also high-leverage)
+01-Agents/* @iMMerSiveTechs
