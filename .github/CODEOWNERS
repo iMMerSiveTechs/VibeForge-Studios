@@ -1,0 +1,18 @@
+# CODEOWNERS — added 2026-05-10 by Dispatch per Clark's path recommendation
+# Brain Bus + bridge code requires iMMerSiveTechs review (currently sole collaborator;
+# acts as JayTee's override gate). Override = explicit force-merge with audit log entry
+# at _changelogs/codeowners-override-YYYY-MM-DD.md
+
+# Bridge / agent inbox/outbox machinery
+_bridge/* @iMMerSiveTechs
+
+# Brain Bus implementation
+**/brain-bus/* @iMMerSiveTechs
+**/brain_bus/* @iMMerSiveTechs
+
+# Speed-to-Lead pilot stack (revenue critical)
+pilots/speed-to-lead/* @iMMerSiveTechs
+pilots/bridge-append/* @iMMerSiveTechs
+
+# Lead researcher (4 AM cron — proof point for parser fix)
+overnight-scripts/lead_researcher.py @iMMerSiveTechs
